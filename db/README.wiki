@@ -1,0 +1,67 @@
+﻿====== General ======
+  * Database tables and columns definition in Livecloud
+
+====== Physical Device ======
+===== Host Device =====
+^host_device^^^^
+^NAME           ^TYPE        ^COMMENT       ^DESCIPTION                    ^
+|id             |integer     |primary key   |AUTO_INCREMENT, host device ID|
+|name           |char(64)    |              |Host device name, admin set|
+|description    |varchar(256)|              |Host device description|
+|ip             |char(16)    |              |Host device IP address|
+|htype          |integer     |              |Host device Hypervisor type: 1.XEN 2.VMWARE|
+|user_name      |varchar(64) |              |Host device user name|
+|user_passwd    |varchar(64) |              |Host device password of user name|
+|brand          |varchar(64) |              |host device brand|
+|model          |varchar(64) |              |host device brand|
+|cpu_info       |varchar(128)|              |Host device CPU information, is written by system|
+|mem_total      |integer     |              |Host device sum of memory, is written by system, unit:G|
+|disk_total     |integer     |              |Host device sum of local disk, is written by system, unit:G|
+|inf0name       |char(16)    |              |Host device interface0 name|
+|inf0type       |integer     |              |Host device interface0 typy: 1.control 2.data 3.uplink|
+|inf0comment    |char(64)    |              |Host device interface0 comment|
+|inf1name       |char(16)    |              |Host device interface1 name|
+|inf1type       |integer     |              |Host device interface1 typy: 1.control 2.data 3.uplink|
+|inf1comment    |char(64)    |              |Host device interface1 comment|
+|inf2name       |char(16)    |              |Host device interface2 name|
+|inf2type       |integer     |              |Host device interface2 typy: 1.control 2.data 3.uplink|
+|inf2comment    |char(64)    |              |Host device interface2 comment|
+|state          |integer     |              |Host device state: 1.validating 2.breakdown 3.validated|
+|poolid         |integer     |references pool(id)|resourcepool ID|
+
+===== Storage Device =====
+^storage_device^^^^
+^NAME           ^TYPE        ^COMMENT       ^DESCIPTION                       ^
+|id             |integer     |primary key   |AUTO_INCREMENT, storage device ID|
+|name           |char(64)    |              |Storage device name, admin set|
+|ip             |char(16)    |              |Storage device IP address|
+|description    |varchar(256)|              |Storage device description|
+|brand          |varchar(64) |              |Storage device brand|
+|type           |integer     |              |Storage device type: 1.NFS|
+|private        |varchar(256)|              |Storage device private infor, diff by type|
+|poolid         |integer     |references pool(id)|resourcepool ID|
+
+===== Network Device=====
+^network_device^^^^
+^NAME           ^TYPE        ^COMMENT       ^DESCIPTION                       ^
+|id             |integer     |primary key   |AUTO_INCREMENT, network device ID|
+|name           |char(64)    |              |Network device name, admin set|
+|description    |varchar(256)|              |Network device description|
+|mip            |char(16)    |              |Network device manage IP address|
+|brand          |varchar(64) |              |Network device brand|
+|portnum        |integer     |              |Network device port number|
+|poolid         |integer     |references pool(id)|resourcepool ID|
+
+===== Network Device Port====
+^network_device_port^^^^
+^NAME           ^TYPE        ^COMMENT       ^DESCIPTION                            ^
+|id             |integer     |primary key   |AUTO_INCREMENT, network device port ID|
+|description    |varchar(256)|              |Port description|
+|deviceid       |integer     |references network_device(id)|Network device ID|
+|portid         |char(64)    |              |Port ID which is indication on device|
+|type           |integer     |              |Port type: 1.virtual 2.RJ45 port 3.optical fibre port|
+|linkspeed      |integer     |              |Port link speed|
+|peertype       |integer     |              |Port peer type: 1.virtual machine 2.virtual switch 3.host 4.uplink 5.stack 6.network storage device|
+|hostip         |char(16)    |references host_device(ip)|Host IP address if peer type is host|
+|peerdesc       |varchar(256)|              |Port peer description if peer type isnot host|
+

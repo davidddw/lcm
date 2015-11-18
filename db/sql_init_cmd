@@ -1,0 +1,2766 @@
+/*
+ * Each time when changing DB table field, you MUST add enough change
+ * log information. Following informations should be provided
+ * 1. What you changed and the reason
+ * 2. Username/Date
+ * 3. Impact on previous versions or other module, e.g, if this change
+ *    has impact on VMDriver/Netowrk/LCWEB...
+ *
+ * Change History:
+ * 1. Add change log file header for sql_init_cmd.
+ *    Changed by Tianpeng Zhang, 2012/08/04.
+ *    No impact on all modules.
+ *
+ * 2. Add master_ip field in pool to store the master host
+ *    Changed by Jie Jin, 2012/08/09.
+ *    No impact on any module.
+ *
+ * 3. Add flag field in pool to store pool mode
+ *    uses bit0, 1 for master-slave mode, 0 for common mode
+ *    Changed by Jie JIN, 2012/08/10.
+ *    No impact on any module.
+ *
+ * 4. Add ip field for vm
+ *    Changed by Jie JIN, 2012/08/16.
+ *    No impact on any module.
+ *
+ * 5. Add label field for vm
+ *    Changed by Jie JIN, 2012/08/17.
+ *    No impact on any module.
+ *
+ * 6. Add vl2 vlan_id field for vl2
+ *    Changed by Tianpeng Zhang, 2012/09/15.
+ *    No impact on any module.
+ *
+ * 7. Add VDI fields for VM
+ *    Changed by Yang Gao, 2012/09/28.
+ *    No impact on any module.
+ *
+ * 8. Add monitor health state field for VM && Compute Resource
+ *    Changed by Lei Shi, 2012/11/10
+ *    No impact on all modules.
+ *
+ * 9. Add vedge and vm's power state field for VM && Vnet
+ *    Changed by Lei Shi, 2012/11/13
+ *    No impact on all modules.
+ *
+ * 10. Add host_usage_v1 and vm_usage_v1,vedge_usage_v1 tables
+ *    Changed by Lei Shi, 2012/11/14
+ *    No impact on all modules.
+ *
+ * 11. Add template_v1 and sys_configuration_v1 tables
+ *    Changed by LAI Yuan, 2012/11/26
+ *    impact on all modules.
+ *
+ * 12. Modify vm/compute_resource tables
+ *    Changed by Lei Shi, 2012/12/12
+ *    no impact to all modules.
+ *
+ * 13. Add vm_snapshot_v1 table
+ *     Changed by Song Zhen, 2013/01/15
+ *     impact on VMDriver/LCM/LCWEB.
+ *
+ * 14. Add vm_backup_v1 table and modify compute_resource_v1
+ *     Changed by Song Zhen, 2013/01/22
+ *     impact on VMDriver/LCM/LCWEB.
+ *
+ * 15. Modify network_resource table
+ *     Changed by Jin Jie, 2013/02/25
+ *     no impact on any module.
+ *
+ * 16. Modify vm table
+ *     Changed by Shi Lei, 2013/03/1
+ *     no impact on any module.
+ * 17. Modify vm_backup_v1 table
+ *     Changed by Song Zhen, 2013/04/17
+ *     impact on VMDriver/LCM/LCWEB.
+ * 18. Modify storage_resouce_v1 table
+ *     Changed by Song Zhen, 2013/04/22
+ *     impact on VMDriver.
+ *
+ * 19. Add vlan_v1 table
+ *     Changed by Jin Jie, 2013/05/21
+ *     no impact on any module.
+ *
+ * 20. modify pool_v1 table
+ *     Changed by Xu Qing, 2013/05/27
+ *     impact on LCWEB.
+ * 21. modify pool_v1 table
+ *     Changed by Xu Qing, 2013/05/28
+ *     impact on LCWEB.
+ * 22. Add table ip_resource_v1
+ *     Modify table user_v1
+ *     Modify table template_v1
+ *     Changed by Zhenyu Zhou, 2013/06/04
+ * 23.
+ *     Modify table user_v1
+ *     Changed by Xu Qing, 2013/06/09
+ *
+ * 24.
+ *     Add table rack_v1
+ *     Changed by Xu Qing, 2013/06/18
+ *
+ * 25. Add domain in table cluster, compute_resource,
+ *     ip_resource, network_resource, networks, pool,
+ *     vcloud, vinterface, vl2, vm_snapshot, vm and vnet
+ *     Changed by Jin Jie, 2013/06/21
+ *
+ * 26. Drop table network_device_port, ports
+ *     and storage_device
+ *     Changed by Jin Jie, 2013/06/21
+ *
+ * 27. Add domain table
+ *     Changed by Jin Jie, 2013/06/21
+ *
+ * 28. recover storage_device table
+ *     Changed by Lei shi, 2013/06/24
+ *
+ * 29. add uplink_ip in rack_v2_0
+ *     Changed by Xiang Yang, 2013/07/01
+ *
+ * 30. add min_rate,max_rate in rack,
+ *     add table rack_tunnel and vl2_vlan.
+ *     Changed by Xiang Yang, 2013/07/02
+ *
+ * 31. add tunnel_host_id in rack
+ *     Changed by Xiang Yang, 2013/07/03
+ *
+ * 32. modify rack_tunnel table,
+ *     add tunnel_policy,uplink_qos table,
+ *     add uplink_ip in compute_resource,
+ *     remove uplink_ip,tunnel_host_id,tunnel_min_rate,tunnel_max_rate in rack table
+ *     Changed by Xiang Yang, 2013/07/05
+ *
+ * 33. add uplink_ip in host_device table,
+ *     Changed by Xiang Yang, 2013/07/11
+ *
+ * 34. add FDB
+ *     Changed by Zhenyu Zhou, 2013/07/12
+ *
+ * 35. add shared_storage_resource_v2_0
+ *     Changed by Jin Jie, 2013/07/18
+ *
+ * 36. add fdb_user, modify fdb_vpc
+ *     Changed by Xu Qing, 2013/08/12
+ *
+ * 37. add modify fdb_vdc
+ *     Changed by Xu Qing, 2013/08/14
+ * 38. adjust fdb
+ *     Changed by Xu Qing, 2013/08/21
+ *
+ * 39. add usage stats time to vnet
+ *     NO impact, NO ISSU
+ *     Changed by Shi Lei, 2013/08/16
+ *
+ * 40. add gw_des_server to vnet
+ *     Changed by Song Zhen, 2013/08/22
+ *
+ * 41. add stats_time to compute_resource
+ *     No Impact
+ *     Changed by Shi Lei, 2013/08/27
+ *
+ * 42. add userid to fdb_vgw fdb_vm
+ *     Changed by Xu Qing, 2013/09/03
+ *
+ * 43. add vdc_v2_0 and modify vnet_v2_0
+ *     Changed by Song Zhen, 2013/09/24
+ *
+ * 44. add uplink_netmask uplink_gateway to host_device and compute_resource
+ *     Changed by Zhou Qi, 2013/09/30
+ *
+ * 45. add vl2_tunnel_policy
+ *     Changed by Zhou Qi, 2013/09/30
+ *
+ * 46. add active to storage_connection_v2_2
+ *     add disk_alloc to storage_v2_2
+ *     Changed by Song Zhen, 2013/10/15
+ *
+ * 47. add template_os_v2_2
+ *     place os template including user defined
+ *     Add by Shi Lei, 2013/10/23
+ *
+ * 48. add haswitchmode to vnet_v2_2
+ *     Changed by Song Zhen, 2013/11/19
+ *
+ * 49. add vc server to vc_server_v2_2
+ *     Changed by Shi Xiao Quan, 2013/11/21
+ *
+ * 50. add vc datacenter to vc_datacenter_v2_2
+ *     Changed by Shi Xiao Quan, 2013/11/21
+ *
+ * 52. modify pool_v2_2 to add vc_datacenter_id
+ *		 Changed by Shi Xiao Quan, 2013/11/21
+ *
+ * 53. add ha_storage_v2_2 ha_storage_connection_v2_2 vdisk_v2_2
+ *     Changed by Zhou Qi, 2013/11/21
+ *
+ * 54. add ha_disk_size to action_v2_2
+ *     Changed by Song Zhen, 2013/11/27
+ *
+ * 54. add table syslog_v2_2
+ *     Add by Song Zhen, 2013/11/29
+ *
+ * 55. add action in vnet_v2_2
+ *     Add by Lei Shi, 2013/12/21
+ *
+ * 56. add server_num/is_expired/license in rack table,
+ *     add is_expired in user table,
+ *     add lease_chk_interval in sys_configuration table
+ *     Changed by Song Zhen, 2014/01/08
+ *
+ * 57. add lease/activation_time/expiry_time in rack table
+ *     Changed by Song Zhen, 2014/01/10
+ *
+ * 58. add is_expired in vm table
+ *     Changed by Song Zhen, 2014/01/14
+ * 59. add three tables:
+ *        vmwaf, vmwaf_web_server_conf and vmwaf_port_map
+ *     Changed by Zhang Zhiming, 2014/01/16
+ *
+ * 60. add exclusive_ip in pool table
+ *     Changed by Song Zhen, 2014/01/21
+ *
+ * 61. add rack_license,resource_expired in sys_configuration table
+ *     Changed by Shi Xiao Quan, 2014/02/12
+ *
+ * 62. add expired_time is_expired DEFAULT 0 in vm and fdb_vm table
+ *     Changed by Shi Xiao Quan, 2014/02/12
+ *
+ * 63. modify expired_time is DEFAULT current_timestamp in vm and fdb_vm table
+ *     Changed by Shi Xiao Quan, 2014/02/13
+ *
+ * 64. add lcuuid in
+ *          cluster,rack,host_device,third_party_device,
+ *          pool,compute_resource,storage_resource,network_resource,ip_resource,
+ *          vcloud,vdc,vl2,vinterface,vnet,vmwaf,vm,template_os
+ *     Changed by Hu Xiaohe, 2014/03/11
+ * 65. add switch_type in rack
+ *     Changed by Ke Zhaosheng, 2014/03/12
+ *
+ * 66. add rackid,ctl_plane_port_list,data_plane_port_list in network_device
+ *     Changed by Ke Zhaosheng, 2014/03/12
+ *
+ * 67. add lcuuid in vm_snapshot_v2_2, vdisk_v2_2
+ *     Changed by Linfang, 2014/03/19
+ *
+ * 68. add table switch_ip, switch_port, gre_port_name, gre_port and gre_key to rack_tunnel_v2_2
+ *     Changed by ZHANG Zhiming, 2014/03/20
+ *
+ * 69. add product_specification_lcuuid in table vm_v2_2 and fdb_vm_v2_2
+ *     Changed by Song Zhen, 2014/04/18
+ *
+ * 70. add isp in table vl2_v2_2
+ *     Changed by Zhou Qi, 2014/04/22
+ *
+ * 71. add table product_specification_v2_2
+ *     Changed by Linfang, 2014/04/24
+ *
+ * 72. add table vl2_net_v2_2, vinterface_ip_v2_2
+ *     Changed by Zhou Qi, 2014/04/28
+ *
+ * 73. add table pool_product_specification_v2_2
+ *     Changed by Song Zhen, 2014/04/28
+ *
+ * 74. alter table vinterface_ip_v2_2 add column
+ *         vifid               INTEGER REFERENCES vinterface_v2_2(id)
+ *     Changed by Jin Jie, 2014/04/30
+ *
+ * 75. add table operation_log_v2_2
+ *     Changed by Linfang, 2014/05/05
+ *
+ * 76. add operationid in table fdb_vm_v2_2
+ *     Changed by Linfang, 2014/05/05
+ *
+ * 77. add operationid,epc_id in table fdb_vl2_v2_2
+ *     Changed by ZhouQi, 2014/05/12
+ *
+ * 78. add order_id, epc_id in table fdb_vm_v2_2
+ *     Changed by Song Zhen, 2014/05/20
+ * 79. add table fdb_third_party_device_v2_2
+ *     Changed by ZHANG Zhiming, 2014/05/19
+ *
+ * 80. Modify userid default 0 in pool_v2_2
+ *     Modify cpu_used, cpu_alloc, mem_total, mem_usage, mem_alloc
+ *     default 0 in table compute_resource_v2_2
+ *     Modify disk_total, disk_used, disk_alloc default 0 in storage_v2_2
+ *
+ * 81. add userid in table fdb_vl2_v2_2 and vl2_v2_2
+ *     Changed by ZhouQi, 2014/05/23
+ *
+ * 82. add content in table product_specification_v2_2
+ *     Changed by Song Zhen, 2014/05/26
+ *
+ * 83. add table epc_v2_2
+ *     Changed by Linfang, 2014/5/26
+ *
+ * 84. add ipmiinfo table
+ *     Changed by ShiXiaoQuan,2014/05/28
+ *
+ * 85. add table nas_storage_v2_2
+ *     Changed by Song Zhen, 2014/05/28
+ *
+ * 86. add default value in fdb_user_v2_2
+ *     Changed by Linfang, 2014/5/28
+ *
+ * 87. add table user_isp_bandwidth_v2_2
+ *     Changed by Zhenyu Zhou, 2014/5/28
+ *
+ * 88. alter table vm_v2_2 add column
+ *         loopback_ips        VARCHAR(256) DEFAULT ''
+ *     Changed by Jin Jie, 2014/05/29
+ *
+ * 89. add default value in fdb_vm_v2_2
+ *     Changed by Song Zhen, 2014/5/29
+ *
+ * 90. add role in fdb_vm_v2_2
+ *     Changed by Song Zhen, 2014/5/29
+ *
+ * 91. add table user_order_isp_bandwidth_v2_2
+ *     Changed by Zhenyu Zhou, 2014/5/29
+ *
+ * 92. add product_type in sql_init_cmd
+ *     Changed by Zhenyu Zhou, 2014/6/03
+ *
+ * 93. add lcuuid in table user_isp_bandwidth_v2_2 and
+ *     product_specification_v2_2 in ip_resource_v2_2
+ *     Changed by ZhouQi, 2014/06/4
+ *
+ * 94. add order db and order_id in third_party_device and ip_resource
+ *     Changed by Zhenyu Zhou, 2014/06/05
+ *
+ * 95. add net_type isp in table fdb_vl2_v2_2
+ *     Changed by ZhouQi, 2014/06/5
+ *
+ * 96. add table vul_scanner_v2_2
+ *     Changed by Song Zhen, 2014/06/09
+ *
+ * 97. add pool_lcuuid in fdb_vm_v2_2
+ *     Changed by Song Zhen, 2014/06/11
+ *
+ * 98. add role, create_time in third_party_device_v2_2
+ *     Changed by ZhouQi, 2014/06/20
+ *
+ * 99. add dbservice table
+ *     Changed by Zhenyu Zhou, 2014/06/27
+ *
+ * 100. add table service_vendor_v2_2
+ *     Changed by Song Zhen, 2014/07/01
+ *
+ * 101. add table nas_storage_plug_info_v2_2
+ *      Changed by Linfang, 2014/08/01
+ *
+ * 102. add table cloud_disk_v2_2
+ *      Changed by Linfang, 2014/08/01
+ *
+ * 103. add table charge_amount_v2_2,charge_detail_v2_2
+ *     Changed by Shi Xiao Quan, 2014/08/04
+ *
+ * 104. add name, service_vendor, protocol
+ *      delete vm_lcuuid, vm_service_ip in nas_storage_v2_2
+ *      Changed by Linfang, 2014/08/07
+ *
+ * 105. add state in table product_specification_v2_2
+ *     Changed by Song Zhen, 2014/08/22
+ *
+ * 106. add balance_alloc in table fdb_user_v2_2
+ *     Changed by Shi Xiao Quan, 2014/09/03
+ *
+ * 107. delete table charge_amount_v2_2
+ *     Changed by Shi Xiao Quan, 2014/09/09
+ *
+ * 108. add table charge_detail_history_v2_2
+ *     Changed by Shi Xiao Quan, 2014/09/09
+ *
+ * 109. add charge_mode,price in charge_detail
+ *     Changed by Shi Xiao Quan, 2014/09/11
+ *
+ * 110. add tables unit_price and pricing_plan
+ *     Changed by Jin Jie, 2014/09/15
+ *
+ * 111. add plan_name in table product_specification_v2_2
+ *     Changed by Song Zhen, 2014/09/16
+ *
+ * 112. add vm_lcuuid, size, userid in table vm_snapshot_v2_2
+ *     Changed by Song Zhen, 2014/09/19
+ *
+ * 113. add table charge_detail_1month_v2_2
+ *     Changed by Linfang, 2014/09/22
+ *
+ * 114. add table lb_cluster_v2_2, lb_v2_2
+ *     Changed by Song Zhen, 2014/09/24
+ *
+ * 115. add forward_rule_lcuuid in lb_bk_vm_v2_2
+ *      add table lb_forward_rule_v2_2
+ *     Changed by Song Zhen, 2014/10/08
+ *
+ * 116. modify table domain_v2_2
+ *      add column lcuuid, delete column domain
+ *     Changed by Song Zhen, 2014/10/14
+ *
+ * 117. modify domain column char(16) to char(64)
+ *     Changed by Song Zhen, 2014/10/14
+ *
+ * 118. add table backup_v2_2, recovery_v2_2
+ *     Changed by Linfang, 2014/10/15
+ *
+ * 119. add scan_target in vul_scanner_v2_2
+ *     Changed by Linfang, 2014/10/28
+ *
+ * 120. add table recharge_record_v2_2
+ *     Changed by Zhou Qi, 2014/11/04
+ *
+ * 121. add order_id in order_v2_2
+ *     Changed by Shi Xiao Quan 2014/11/17
+ *
+ * 122. add vendor in template_os_v2_2
+ *     Changed by Song Zhen 2015/01/20
+ *
+ * 123. add tables promotion_rules
+ *     Changed by Linfang, 2015/01/23
+ *
+ * 124. add role in vnet_v2_2
+ *     Changed by Wang Kai 2015/01/26
+ *
+ * 125. add table backup_space_v2_2
+ *    Changed by Linfang, 2015/01/30
+ *
+ * 126. add table promotion_rules_detail
+ *    Changed By Shi Xiao Quan 2015/02/02
+ *
+ * 127. modify table domain_v2_2
+ *      add column role
+ *    Changed By Shi Xiao Quan 2015/02/03
+ *
+ * 128. add specification in vnet_v2_2
+ *     Changed by Wang Kai 2015/02/05
+ *
+ * 129. add ceil_bandw and modify bandw in vinterface_v2_2
+ *     Changed by Wang Kai 2015/02/05
+ *
+ * 130. add role in fdb_vgateway_v2_2
+ *      Changed by Wei Xiao Feng 2015/02/06
+ *
+ * 131. modify table storage_v2_2
+ *          add column state, backend, domain and lcuuid
+ *      add table block_device
+ *      add table block_snapshot
+ *      add table block_attached
+ *    Changed by Jin Jie 2015/02/05
+ *
+ * 132. modify table domain_v2_2
+ *      add column public_ip
+ *     Changed By Pengfei 2015/02/09
+ *
+ * 133. modify table fdb_user_v2_2,user_v2_2
+ *      add column useruuid
+ *     Changed By Pengfei 2015/02/09
+ *
+ * 134. modify table fdb_user_v2_2
+ *      add comment for user_type
+ *    Changed By Xiaofeng 2015/03/06
+ *
+ * 135. modify table storage_v2_2
+ *          add column type
+ *      modify table block_device
+ *          change column storage_id -> storage_lcuuid,
+ *                        vm_id -> vm_lcuuid,
+ *                        user_id -> user_lcuuid
+ *      modify table block_snapshot
+ *          change column block_device_id -> block_device_lcuuid,
+ *                        storage_id -> storage_lcuuid
+ *      modify table block_attached
+ *          change column vm_id -> vm_lcuuid,
+ *                        block_device_id -> block_device_lcuuid
+ *    Changed by Jin Jie 2015/03/10
+ *
+ * 136. modify table vm_snapshot_v2_2
+ *          add column description, is_current, parent_lcuuid,
+                       is_root
+ *      modify table block_snapshot
+ *          add column parent_lcuuid, vm_snapshot_lcuuid, is_root
+ *    Changed by Song Zhen 2015/03/19
+ *
+ * 137. modify table vinterface_v2_2
+ *      add column broadc_bandw, broadc_ceil_bandw
+ *      Changed by Wang Kai 2015/03/20
+ *
+ * 138. modify table block_device
+ *          add column product_specification_lcuuid
+ *      modify table block_snapshot
+ *          add column product_specification_lcuuid
+ *    Changed by Song Zhen 2015/03/20
+ *
+ * 139. modify table vm_snapshot_v2_2
+ *          add column product_specification_v2_2
+ *    Changed by Song Zhen 2015/03/23
+ *
+ * 140. modify table block_device
+ *          change column user_lcuuid -> userid
+ *      modify table block_snapshot
+ *          add column userid
+ *    Changed by Song Zhen 2015/03/23
+ *
+ * 141. modify table block_device
+ *          change column userid -> user_lcuuid
+ *          add column errno, order_id
+ *      modify table block_snapshot
+ *          change column userid -> user_lcuuid
+ *    Changed by Song Zhen 2015/04/02
+ *
+ * 142. add control_ip in service_vendor_v2_2
+ *    Changed by Linfang 2015/04/08
+ *
+ * 143. drop table backup_v2_2, recovery_v2_2
+ *    Changed by Linfang 2015/04/28
+ *
+ * 144. add tables about azure_vm
+ *      Changed by Song Zhen 2015/08/06
+ *
+ * 145. add table portgroup_v2_2
+ *    Changed by Xigy 2015/08/06
+ *
+ * 146. add in_mode,rackid in vc_server_v2_2
+ *    Changed by Xigy 2015/08/18
+ *
+ * 147. add poolid,mem_data,nic_data in third_party_device_v2_2
+ *      add poolid in fdb_third_party_device_v2_2
+ *      modify ttype comment in template_os_v2_2
+ *    Changed by Wang Kai 2015/09/15
+ *
+ * 148. add speed in vinterface_v2_2
+ *      modify type,ctype,stype comment in pool_v2_2
+ *    Changed by Wang Kai 2015/09/22
+ *
+ * 149. add nic_num,disk_size in third_party_device_v2_2
+ *      modify mem_size,mem_used comment in third_party_device_v2_2
+ *    Changed by Wang Kai 2015/09/15
+ *
+ * 150. add table openstack_tenant
+ *      Changed by Song Zhen 2015/10/14
+ *
+ * 151. add table micro_segment_v2_2, micro_segment_flow_v2_2,
+ *                service_chain_element_v2_2, acl_group_v2_2, acl_rule_v2_2
+ *      add parent_id in vl2_v2_2
+ *      add ms_id, ms_vlantag in vinterface_v2_2
+ *      Changed by Xiang Yang, Xi Guanyu, Wang Kai 2015/10/29
+ *
+ */
+
+DROP DATABASE IF EXISTS livecloud;
+
+CREATE DATABASE livecloud;
+
+USE livecloud;
+
+CREATE TABLE IF NOT EXISTS cluster_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(64),
+    location            VARCHAR(256),
+    admin               VARCHAR(64),
+    deploy_time         DATETIME,
+    platform            VARCHAR(64),
+    support             VARCHAR(64),
+    domain              CHAR(64),
+    vc_datacenter_id    INTEGER,
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM cluster_v2_2;
+
+CREATE TABLE IF NOT EXISTS rack_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(256),
+    location            VARCHAR(256),
+    clusterid           INTEGER,
+    switch_type         INTEGER DEFAULT 0 COMMENT '0: Ethernet, 1: OpenFlow(deprecated), 2: Tunnel',
+    domain              CHAR(64),
+    server_num          INTEGER,
+    is_expired          INTEGER DEFAULT 0,
+    license             VARCHAR(128),
+    lease               INTEGER,
+    activation_time     CHAR(16),
+    expiry_time         CHAR(16),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM rack_v2_2;
+
+CREATE TABLE IF NOT EXISTS rack_tunnel_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    local_uplink_ip     CHAR(16) COMMENT 'uplink ip address of local gateway host',
+    remote_uplink_ip    CHAR(16) COMMENT 'uplink ip address of remote gateway host',
+    switch_ip           CHAR(16) COMMENT 'openflow switch ip address of the rack',
+    gre_bind_port       INTEGER,
+    gre_port_name       CHAR(64) COMMENT 'the name of gre port in openflow switch',
+    gre_port            INTEGER,
+    gre_key             CHAR(32) COMMENT 'the key of gre tunnel'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE rack_tunnel_v2_2;
+
+CREATE TABLE IF NOT EXISTS tunnel_policy_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    vifid               INTEGER,
+    uplink_ip           CHAR(16) COMMENT 'uplink ip address of one gateway host in its rack',
+    vdevicetype         INTEGER COMMENT 'Type 1. vm, 2. vgate',
+    vdeviceid           INTEGER COMMENT 'vnet id if devicetype is vgate, vm id if devicetype is vm',
+    vl2id               INTEGER,
+    vlantag             INTEGER,
+    vifmac              CHAR(32)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE tunnel_policy_v2_2;
+
+CREATE TABLE IF NOT EXISTS vl2_tunnel_policy_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    uplink_ip           CHAR(16) COMMENT 'uplink ip address of one gateway host in its rack',
+    vl2id               INTEGER,
+    vlantag             INTEGER
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vl2_tunnel_policy_v2_2;
+
+CREATE TABLE IF NOT EXISTS uplink_qos_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    uplink_ip           CHAR(16) COMMENT 'uplink ip address of local gateway host',
+    tunnel_min_rate     INTEGER DEFAULT 500 COMMENT 'minimal bandwidth for gre tunnels, Mbps',
+    tunnel_max_rate     INTEGER DEFAULT 700 COMMENT 'maximal bandwidth for gre tunnels, Mbps'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE uplink_qos_v2_2;
+
+CREATE TABLE IF NOT EXISTS host_device_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    type                INTEGER COMMENT '1.Server 2.Gateway',
+    state               INTEGER COMMENT '0.Temp 1.Creating 2.Complete 3.Modifying 4.Exception',
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    name                CHAR(64),
+    description         VARCHAR(256),
+    eventid             INTEGER DEFAULT 0,
+    ip                  CHAR(16),
+    uplink_ip           CHAR(16),
+    uplink_netmask      CHAR(16),
+    uplink_gateway      CHAR(16),
+    htype               INTEGER,
+    user_name           VARCHAR(64),
+    user_passwd         VARCHAR(64),
+    os                  VARCHAR(64),
+    admin               VARCHAR(64),
+    rack                VARCHAR(64),
+    misc                VARCHAR(64),
+    brand               VARCHAR(64),
+    model               VARCHAR(64),
+    mem_info            VARCHAR(64),
+    disk_info           VARCHAR(64),
+    cpu_info            VARCHAR(128),
+    mem_total           INTEGER,
+    disk_total          INTEGER,
+    vcpu_num            INTEGER,
+    inf0type            INTEGER,
+    inf1type            INTEGER,
+    inf2type            INTEGER,
+    poolid              INTEGER DEFAULT -1,
+    rackid              INTEGER,
+    clusterid           INTEGER REFERENCES cluster_v2_2(id),
+    vmware_cport        INTEGER,
+    ofs_dataport        INTEGER,
+    ofs_crlport         INTEGER,
+    master_ip           CHAR(16),
+    nic_type            INTEGER COMMENT '1.Gigabit-NIC 2.10Gigabit-NIC',
+    storage_link_ip     CHAR(16),
+    domain              CHAR(64) DEFAULT '',
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain),
+    UNIQUE INDEX ip_index(ip)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE host_device_v2_2;
+
+CREATE TABLE IF NOT EXISTS fdb_template_liveconnector_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER DEFAULT 0 COMMENT '1.Enable 2.Disable',
+    name                CHAR(128) NOT NULL,
+    description         VARCHAR(256) NOT NULL,
+    bandwidth           BIGINT COMMENT 'unit: bps',
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE fdb_template_liveconnector_v2_2;
+
+CREATE TABLE IF NOT EXISTS fdb_third_party_device_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    epc_id              INTEGER DEFAULT 0,
+    order_id            INTEGER DEFAULT 0,
+    userid              INTEGER,
+    poolid              INTEGER DEFAULT 0,
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE fdb_third_party_device_v2_2;
+
+CREATE TABLE IF NOT EXISTS third_party_device_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    epc_id              INTEGER DEFAULT 0,
+    vm_id               INTEGER,
+    curr_time           timestamp,
+    sys_uptime          CHAR(32),
+    type                INTEGER COMMENT '1.VM 2.Gateway 3.Compute 4.Network 5.Storage 6.Security',
+    state               INTEGER COMMENT '0.Temp 1.run 2.stop 3.added to vdc 4.no add to vdc 5.to start 6.to stop',
+    name                CHAR(64),
+    label               CHAR(64),
+    poolid              INTEGER DEFAULT 0,
+    community           VARCHAR(256),
+    mgmt_ip             CHAR(16),
+    data_ip             CHAR(16),
+    ctrl_ip             CHAR(16),
+    ctrl_mac            CHAR(32),
+    data1_mac           CHAR(32),
+    data2_mac           CHAR(32),
+    data3_mac           CHAR(32),
+    launch_server       CHAR(16),
+    user_name           VARCHAR(64),
+    user_passwd         VARCHAR(64),
+    vnc_port            INTEGER DEFAULT 0,
+    brand               VARCHAR(64),
+    sys_os              VARCHAR(64),
+    mem_size            INTEGER COMMENT 'Unit: MB',
+    mem_used            INTEGER COMMENT 'Unit: MB',
+    mem_usage           VARCHAR(32),
+    mem_data            VARCHAR(256),
+    cpu_type            VARCHAR(128),
+    cpu_num             INTEGER,
+    cpu_data            VARCHAR(256),
+    disk_size           INTEGER COMMENT 'Unit: GB',
+    dsk_num             INTEGER,
+    disk_info           VARCHAR(1024),
+    nic_num             INTEGER,
+    nic_data            VARCHAR(256),
+    rack_name           VARCHAR(256),
+    userid              INTEGER,
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    order_id            INTEGER,
+    product_specification_lcuuid CHAR(64),
+    role                INTEGER DEFAULT 1 COMMENT '1. General Purpose, 2. Load Balancer, 3. Database, 4. Web Server, 5. APP Server, 6. Firewall, 7. Gateway, 8. VPN, 9. Storage, 10. WAF',
+    create_time         DATETIME,
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE third_party_device_v2_2;
+
+CREATE TABLE IF NOT EXISTS pacemaker_beacon_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                CHAR(64) DEFAULT '',
+    ip                  VARCHAR(64) DEFAULT '' COMMENT 'management IP address of beacon node',
+    user_name           VARCHAR(64),
+    user_passwd         VARCHAR(64),
+    rackid              INTEGER DEFAULT 0,
+    ring0_bindnet       VARCHAR(64) DEFAULT '' COMMENT 'network address (bindnetaddr) of ring0',
+    ring0_mcastaddr     VARCHAR(64) DEFAULT '' COMMENT 'multicast destination address (mcastaddr) of ring0',
+    ring0_mcastport     INTEGER DEFAULT 0 COMMENT 'mlticast destination port (mcastport) of ring0',
+    ring1_bindnet       VARCHAR(64) DEFAULT '' COMMENT 'optional, network address (bindnetaddr) of ring1',
+    ring1_mcastaddr     VARCHAR(64) DEFAULT '' COMMENT 'optional, multicast destination address (mcastaddr) of ring1',
+    ring1_mcastport     INTEGER DEFAULT 0 COMMENT 'optional, mlticast destination port (mcastport) of ring1'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE pacemaker_beacon_v2_2;
+
+CREATE TABLE IF NOT EXISTS storage_device_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                CHAR(64),
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    eventid             INTEGER DEFAULT 0,
+    ip                  CHAR(16),
+    description         VARCHAR(256),
+    brand               VARCHAR(64),
+    type                INTEGER,
+    capacity            INTEGER COMMENT 'Unit:G',
+    private             VARCHAR(256)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE storage_device_v2_2;
+
+CREATE TABLE IF NOT EXISTS network_device_v2_2 (
+    id                    INTEGER NOT NULL auto_increment PRIMARY KEY,
+    rackid                INTEGER,
+    name                  CHAR(64),
+    flag                  INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    description           VARCHAR(256),
+    eventid               INTEGER DEFAULT 0,
+    mip                   CHAR(16),
+    brand                 VARCHAR(64),
+    portnum               INTEGER,
+    api                   INTEGER DEFAULT 0 COMMENT '1.Enable 2.Disable',
+    crl_plane_port_list   VARCHAR(256) DEFAULT '' COMMENT 'Deprecated',
+    data_plane_port_list  VARCHAR(256) DEFAULT '' COMMENT 'Deprecated',
+    uplink_port0          INTEGER DEFAULT 0 COMMENT 'Deprecated',
+    uplink_port1          INTEGER DEFAULT 0 COMMENT 'Deprecated',
+    tunnel_ip             CHAR(16),
+    tunnel_netmask        CHAR(16) DEFAULT '' COMMENT 'Deprecated',
+    tunnel_gateway        CHAR(16) DEFAULT '' COMMENT 'Deprecated',
+    username              VARCHAR(64),
+    password              VARCHAR(64),
+    enable                VARCHAR(64) DEFAULT '',
+    boot_time             BIGINT DEFAULT 0,
+    domain                CHAR(64) DEFAULT '',
+    lcuuid                CHAR(64)
+)engine=innodb AUTO_INCREMENT=1  DEFAULT CHARSET=utf8;
+TRUNCATE TABLE network_device_v2_2;
+
+CREATE TABLE IF NOT EXISTS host_port_config_v2_2(
+    id                    INTEGER NOT NULL auto_increment PRIMARY KEY,
+    type                  INTEGER,
+    name                  CHAR(64),
+    mac                   CHAR(32),
+    host_ip               CHAR(16),
+    torswitch_port        CHAR(64),
+    torswitch_id          INTEGER
+)engine=innodb AUTO_INCREMENT=1  DEFAULT CHARSET=utf8;
+TRUNCATE TABLE host_port_config_v2_2;
+
+CREATE TABLE IF NOT EXISTS pool_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER COMMENT '0.Temp 1.Creating 2.Deleting 3.Modifying 4.Complete 5.Exception 6.Warning',
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    type                INTEGER DEFAULT 1 COMMENT '1.vm 2.gateway 3.nsp 4.tpd',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Compute resource timeout 2.Storage resource timeout 3.Network resource timeout',
+    eventid             INTEGER DEFAULT 0,
+    name                CHAR(64),
+    description         VARCHAR(256),
+    ctype               INTEGER COMMENT '1.XEN 2.VMWARE 3.KVM',
+    stype               INTEGER COMMENT '1.local 2.shared',
+    master              CHAR(16),
+    clusterid           INTEGER REFERENCES cluster_v2_2(id),
+    ip_list             TEXT,
+    bandwidth           INTEGER COMMENT 'deprecated',
+    disk_total          INTEGER,
+    disk_usage          INTEGER,
+    userid              INTEGER DEFAULT 0,
+    `lock`              INTEGER,
+    exclusive_ip        INTEGER,
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM pool_v2_2;
+
+CREATE TABLE IF NOT EXISTS pool_product_specification_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    pool_lcuuid         CHAR(64) DEFAULT '',
+    product_spec_lcuuid CHAR(64) DEFAULT ''
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE pool_product_specification_v2_2;
+
+CREATE TABLE IF NOT EXISTS compute_resource_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(64),
+    type                INTEGER COMMENT '0.Server 1.Gateway',
+    service_flag        INTEGER COMMENT '0.none 0x1.backup',
+    state               INTEGER COMMENT '0.TempPush 1.Pushing 2.Pulling 3.Modifying 4.Complete 5.Exception 6.TempPull',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    eventid             INTEGER DEFAULT 0,
+    ip                  CHAR(16),
+    uplink_ip           CHAR(16),
+    uplink_netmask      CHAR(16),
+    uplink_gateway      CHAR(16),
+    user_name           VARCHAR(64),
+    user_passwd         VARCHAR(64),
+    uuid                CHAR(64),
+    flag                INTEGER DEFAULT 0 COMMENT '0x1.free 0x2.inuse 0x4.connected 0x8. Recovery',
+    cpu_info            VARCHAR(128),
+    cpu_usage           VARCHAR(1024),
+    mem_total           INTEGER DEFAULT 0,
+    mem_usage           INTEGER DEFAULT 0,
+    disk_total          INTEGER,
+    disk_usage          INTEGER,
+    ha_disk_total       INTEGER,
+    ha_disk_usage       INTEGER,
+    linkespeed          INTEGER,
+    bandwidth_total     INTEGER COMMENT 'deprecated',
+    bandwidth_usage     INTEGER COMMENT 'deprecated',
+    role                INTEGER COMMENT '1.master 2.slave',
+    max_vm              INTEGER,
+    health_state        INTEGER DEFAULT 0,
+    cpu_start_time      BIGINT DEFAULT 0,
+    disk_start_time     BIGINT DEFAULT 0,
+    traffic_start_time  BIGINT DEFAULT 0,
+    check_start_time    BIGINT DEFAULT 0,
+    stats_time          BIGINT DEFAULT 0,
+    poolid              INTEGER REFERENCES pool_v2_2(id),
+    dbr_peer_server     CHAR(16),
+    rackid              INTEGER,
+    domain              CHAR(64),
+    cpu_used            INTEGER DEFAULT 0,
+    cpu_alloc           INTEGER DEFAULT 0,
+    mem_alloc           INTEGER DEFAULT 0,
+    disk_alloc          INTEGER DEFAULT 0,
+    master_ip           CHAR(16),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain),
+    UNIQUE INDEX ip_index(ip),
+    INDEX type_index(type)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM compute_resource_v2_2;
+
+CREATE TABLE IF NOT EXISTS storage_resource_v2_2 (
+    id                  INTEGER NOT NULL auto_increment,
+    state               INTEGER COMMENT '0.TempPush 1.Pushing 2.Pulling 3.Modifying 4.Complete 5.Exception 6.TempPull',
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    eventid             INTEGER DEFAULT 0,
+    ip                  CHAR(16),
+    type                INTEGER COMMENT '0.Local 1.Remote',
+    private             VARCHAR(256),
+    poolid              INTEGER REFERENCES pool_v2_2(id),
+    capacity            INTEGER COMMENT 'Unit:G',
+    sr_name             VARCHAR(64),
+    sr_uuid             CHAR(64),
+    sr_backup_name      VARCHAR(64),
+    sr_backup_uuid      CHAR(64),
+    attachip            CHAR(16) COMMENT 'host ip if pool is common, master ip if pool is shared' REFERENCES host_device_v2_2(ip),
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+DELETE FROM storage_resource_v2_2;
+
+CREATE TABLE IF NOT EXISTS network_resource_v2_2 (
+    id                  INTEGER NOT NULL auto_increment,
+    state               INTEGER COMMENT '0.TempPush 1.Pushing 2.Pulling 3.Modifying 4.Complete 5.Exception 6.TempPull',
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    eventid             INTEGER DEFAULT 0,
+    type                INTEGER COMMENT '0.Virtual 1. Physical',
+    portnum             INTEGER,
+    poolid              INTEGER REFERENCES pool_v2_2(id),
+    ip                  CHAR(16) REFERENCES compute_resource_v2_2(ip),
+    netdeviceid         INTEGER REFERENCES network_device_v2_2(id),
+    network_uuid0       CHAR(64),
+    network_uuid1       CHAR(64),
+    network_uuid2       CHAR(64),
+    network_br_tun      CHAR(64),
+    network_br_int      CHAR(64),
+    int_patch_port      INTEGER,
+    tunnel_ip           CHAR(16),
+    domain              CHAR(16),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+DELETE FROM network_resource_v2_2;
+
+CREATE TABLE IF NOT EXISTS network_resource_port_v2_2 (
+    id                  INTEGER NOT NULL auto_increment PRIMARY KEY,
+    hostip              CHAR(16) REFERENCES compute_resource_v2_2(ip),
+    ovsid               INTEGER REFERENCES network_resource_v2_2(id),
+    portid              CHAR(64),
+    vlanid              INTEGER,
+    type                INTEGER COMMENT '1.Virtual 2.RJ45 port 3.optical fibre port',
+    linkspeed           INTEGER,
+    peertype            INTEGER COMMENT 'Peer type: 1.virtual machine 2.virtual switch 3.host 4.uplink 5.stack 6.network storage device',
+    vmid                INTEGER REFERENCES vm_v2_2(id),
+    peerdesc            VARCHAR(256)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+TRUNCATE TABLE network_resource_port_v2_2;
+
+CREATE TABLE IF NOT EXISTS vcloud_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Complete 3.Exception 4.Modifing 5.Destroying 6.Warning',
+    pre_state           INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Complete 3.Exception 4.Modifing 5.Destroying 6.Warning',
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    eventid             INTEGER DEFAULT 0,
+    name                VARCHAR(64) NOT NULL COMMENT 'cloudname',
+    description         VARCHAR(100) DEFAULT NULL COMMENT 'cloud description',
+    user                INTEGER NOT NULL COMMENT 'cloud owner userid',
+    `lock`              INTEGER,
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+DELETE FROM vcloud_v2_2;
+
+CREATE TABLE IF NOT EXISTS vdc_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER,
+    name                CHAR(64),
+    description         VARCHAR(256),
+    vcloudid            INTEGER,
+    domain              CHAR(64),
+    userid              INTEGER,
+    passwd              CHAR(32),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+DELETE FROM vdc_v2_2;
+
+CREATE TABLE IF NOT EXISTS vnet_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Created 3.Exception 4.Modifing 5.Destroying 6.To run 7.Running 8.To stop 9.Stopped',
+    pre_state           INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Created 3.Exception 4.Modifing 5.Destroying 6.To run 7.Running 8.To stop 9.Stopped',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    eventid             INTEGER DEFAULT 0,
+    name                CHAR(64),
+    label               CHAR(64),
+    description         VARCHAR(256),
+    epc_id              INTEGER DEFAULT 0,
+    vl2_num             INTEGER,
+    vdcid               INTEGER,
+    vcloudid            INTEGER,
+    gw_poolid           INTEGER,
+    gw_launch_server    CHAR(16),
+    gwtemplate          CHAR(64),
+    gwimport            VARCHAR(256),
+    flag                INTEGER DEFAULT 0 COMMENT '0x1. From Template 0x2. Import 0x8. Recovery. 0x20. ForceDelete 0x40. Retry',
+    opaque_id           VARCHAR(64),
+    vdi_sys_sr_name     CHAR(64),
+    tport               INTEGER,
+    lport               INTEGER,
+    pub_ifid            INTEGER REFERENCES vinterface_v2_2(id),
+    public_if1id        INTEGER REFERENCES vinterface_v2_2(id),
+    public_if2id        INTEGER REFERENCES vinterface_v2_2(id),
+    public_if3id        INTEGER REFERENCES vinterface_v2_2(id),
+    private_if1id       INTEGER REFERENCES vinterface_v2_2(id),
+    private_if2id       INTEGER REFERENCES vinterface_v2_2(id),
+    private_if3id       INTEGER REFERENCES vinterface_v2_2(id),
+    private_if4id       INTEGER REFERENCES vinterface_v2_2(id),
+    private_if5id       INTEGER REFERENCES vinterface_v2_2(id),
+    ctrl_ifid           INTEGER REFERENCES vinterface_v2_2(id),
+    uuid                CHAR(64),
+    domain              CHAR(64),
+    health_state        INTEGER,
+    cpu_start_time      BIGINT DEFAULT 0,
+    disk_start_time     BIGINT DEFAULT 0,
+    check_start_time    BIGINT DEFAULT 0,
+    exclude_server      VARCHAR(128),
+    passwd              CHAR(32),
+    public_if1ip_num    INTEGER,
+    public_if2ip_num    INTEGER,
+    public_if3ip_num    INTEGER,
+    public_if1isp       INTEGER,
+    public_if2isp       INTEGER,
+    public_if3isp       INTEGER,
+    gw_des_server       CHAR(16),
+    haflag              INTEGER DEFAULT 0 COMMENT '0x1. Single 0x2. HA',
+    hastate             INTEGER DEFAULT 0 COMMENT '0x1. master 0x2. backup',
+    havrid              INTEGER DEFAULT 0,
+    haswitchmode        INTEGER DEFAULT 0 COMMENT '0x1. auto 0x2. manual',
+    action              INTEGER DEFAULT 0 COMMENT '1.Lcontroller',
+    userid              INTEGER,
+    conn_max            INTEGER DEFAULT 0 COMMENT 'max conntrack in /proc/net/nf_conntrack for this vgw',
+    new_conn_per_sec    INTEGER DEFAULT 0 COMMENT 'newly created conn of this vgw per second',
+    lcuuid              CHAR(64),
+    product_specification_lcuuid CHAR(64),
+    role                INTEGER DEFAULT 0 COMMENT '1. General Purpose, 2. Load Balancer, 3. Database, 4. Web Server, 5. APP Server, 6. Firewall, 7. Gateway, 8. VPN, 9. Storage, 10. WAF, 11. Transparent Bridge',
+    specification       VARCHAR(256) DEFAULT '' COMMENT 'json string. for valve the form is {"IPS":N,"PRICE":{"1":N1,"2":N2,...,"k":Nk}} where N, k and Nk mean number; for vgateway the form is {"RATE":N} where N means number',
+    PRIMARY KEY (id,domain),
+    INDEX state_server_index(state, gw_launch_server)
+/* Avoid the TALBE_IDs 220/253/254/255 because policy routes strongswan/default/main/local
+ * are using them, and ip route flush table 220/253/254/255 will cause the route
+ * of control plane is removed. */
+)ENGINE=innodb AUTO_INCREMENT=256 DEFAULT CHARSET=utf8;
+DELETE FROM vnet_v2_2;
+
+CREATE TABLE IF NOT EXISTS vmwaf_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '1.Running 2.Exception',
+    pre_state           INTEGER NOT NULL COMMENT '1.Running 2.Exception',
+    flag                INTEGER DEFAULT 0 COMMENT '0x1. Adding security. 0x2. Deleting security',
+    eventid             INTEGER DEFAULT 0,
+    errorno             INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    label               CHAR(64) NOT NULL,
+    description         VARCHAR(256) DEFAULT NULL,
+    userid              INTEGER REFERENCES user_v2_2(id),
+    ctrl_ifid           INTEGER REFERENCES vinterface_v2_2(id),
+    wan_if1id           INTEGER REFERENCES vinterface_v2_2(id),
+    lan_if1id           INTEGER REFERENCES vinterface_v2_2(id),
+    launch_server       CHAR(16) REFERENCES compute_resource_v2_2(ip),
+    vdi_sys_uuid        CHAR(64),
+    vdi_sys_sr_uuid     CHAR(64),
+    vdi_sys_sr_name     CHAR(64),
+    vdi_sys_size        INTEGER DEFAULT 0,
+    vdi_user_uuid       CHAR(64),
+    vdi_user_sr_uuid    CHAR(64),
+    vdi_user_sr_name    CHAR(64),
+    vdi_user_size       INTEGER DEFAULT 0,
+    mem_size            INTEGER DEFAULT 0,
+    vcpu_num            INTEGER DEFAULT 0,
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM vmwaf_v2_2;
+
+CREATE TABLE IF NOT EXISTS vmwaf_web_server_conf_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '1.enabled 2.disabled 3.exception',
+    pre_state           INTEGER NOT NULL COMMENT '1.enabled 2.disabled 3.exception',
+    flag                INTEGER DEFAULT 0 COMMENT '0x1. Adding. 0x2. Deleting',
+    errorno             INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    description         VARCHAR(256) DEFAULT NULL,
+    vnetid              INTEGER REFERENCES vnet_v2_2(id),
+    server_name         CHAR(64),
+    service_type        INTEGER NOT NULL COMMENT '1.http 2.https',
+    pub_ipaddr          CHAR(16) REFERENCES ip_resource_v2_2(ip),
+    pub_port            INTEGER NOT NULL,
+    pub_mac             CHAR(32),
+    domain_name         CHAR(128),
+    weblog_state        INTEGER NOT NULL COMMENT '1.enabled 2.disabled',
+    vmwafid             INTEGER REFERENCES vmwaf_v2_2(id),
+    domain              CHAR(64),
+    PRIMARY KEY (id,domain)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM vmwaf_web_server_conf_v2_2;
+
+CREATE TABLE IF NOT EXISTS vmwaf_port_map_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '1.enabled 2.disabled 3.exception',
+    pre_state           INTEGER NOT NULL COMMENT '1.enabled 2.disabled 3.exception',
+    flag                INTEGER DEFAULT 0 COMMENT '0x1. Adding. 0x2. Deleting',
+    web_server_confid   INTEGER REFERENCES vmwaf_web_server_conf_v2_2(id),
+    vnetid              INTEGER REFERENCES vnet_v2_2(id),
+    wan_ipaddr          CHAR(16) REFERENCES ip_resource_v2_2(ip),
+    wan_port            INTEGER DEFAULT NULL,
+    wan_mac             CHAR(32),
+    vnet_ipaddr         CHAR(16) DEFAULT NULL,
+    vnet_port           INTEGER DEFAULT NULL,
+    vm_ipaddr           CHAR(16) NOT NULL,
+    vm_port             INTEGER NOT NULL,
+    domain              CHAR(64),
+    PRIMARY KEY (id,domain)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM vmwaf_port_map_v2_2;
+
+CREATE TABLE IF NOT EXISTS vl2_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    parent_id           INTEGER NOT NULL DEFAULT 0 COMMENT 'id of parent vl2',
+    state               INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Created 3.Exception 4.Modifing 5.Destroying 6.Destroyed',
+    pre_state           INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Created 3.Exception 4.Modifing 5.Destroying 6.Destroyed',
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery. 0x20. ForceDelete 0x40. Retry',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    eventid             INTEGER DEFAULT 0,
+    net_type            INTEGER DEFAULT 4 COMMENT '1.CTRL 2.SERVICE 3.WAN 4.LAN',
+    name                VARCHAR(64) NOT NULL,
+    description         VARCHAR(256) DEFAULT NULL,
+    port_num            INTEGER DEFAULT 64,
+    vlan_id             INTEGER DEFAULT 0 COMMENT 'vlantag requested by admin/user',
+    vcloudid            INTEGER NOT NULL DEFAULT 0,
+    vnetid              INTEGER NOT NULL DEFAULT 0,
+    pg_id               VARCHAR(64),
+    ifindex             INTEGER,
+    ip                  VARCHAR(32),
+    netmask             INTEGER,
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    isp                 INTEGER DEFAULT 0,
+    userid              INTEGER DEFAULT 0,
+    epc_id              INTEGER DEFAULT 0,
+    bandwidth           BIGINT COMMENT 'unit: bps' DEFAULT 0,
+    PRIMARY KEY (id,domain)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=4096 ;
+DELETE FROM vl2_v2_2;
+/*
+ * Set AUTO_INCREMENT=4096 added by zhanghzhiming@yunshan.net.cn
+ * Huawei CE6800 switches require VNI(vl2_id) to be no less than 4096
+ */
+
+CREATE TABLE IF NOT EXISTS vl2_net_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    prefix              CHAR(16),
+    netmask             CHAR(16),
+    vl2id               INTEGER REFERENCES vl2_v2_2(id),
+    net_index           INTEGER DEFAULT 0,
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM vl2_net_v2_2;
+
+CREATE TABLE IF NOT EXISTS vl2_vlan_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    vl2id               INTEGER,
+    rackid              INTEGER,
+    vlantag             INTEGER
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vl2_vlan_v2_2;
+
+CREATE TABLE IF NOT EXISTS micro_segment_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    lcuuid              CHAR(64),
+    name                CHAR(128),
+    epc_id              INTEGER DEFAULT 0,
+    vl2_id              INTEGER DEFAULT 0,
+    parent_vl2_id       INTEGER DEFAULT 0,
+    type                INTEGER DEFAULT 0 COMMENT '0: HOST, 1: SERVICE, 2: ISP, 3: GATEWAY',
+    vlantag             INTEGER DEFAULT 0
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE micro_segment_v2_2;
+
+CREATE TABLE IF NOT EXISTS micro_segment_flow_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    lcuuid              CHAR(64),
+    name                CHAR(64),
+    epc_id              INTEGER DEFAULT 0,
+    vl2_id              INTEGER DEFAULT 0,
+    src_ms_id           INTEGER DEFAULT 0,
+    dst_ms_id           INTEGER DEFAULT 0
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE micro_segment_flow_v2_2;
+
+CREATE TABLE IF NOT EXISTS acl_group_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    lcuuid              CHAR(64),
+    name                CHAR(64)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE acl_group_v2_2;
+
+CREATE TABLE IF NOT EXISTS acl_rule_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    acl_group_id        INTEGER DEFAULT 0,
+    acl_index           INTEGER DEFAULT 0,
+    protocol            INTEGER DEFAULT 0,
+    src_port            INTEGER DEFAULT 0,
+    dst_port            INTEGER DEFAULT 0
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE acl_rule_v2_2;
+
+CREATE TABLE IF NOT EXISTS service_chain_element_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ms_flow_id          INTEGER DEFAULT 0,
+    ele_index           INTEGER DEFAULT 0,
+    acl_group_id        INTEGER DEFAULT 0,
+    devicetype          INTEGER DEFAULT 0,
+    deviceid            INTEGER DEFAULT 0,
+    in_ifindex          INTEGER DEFAULT 0,
+    out_ifindex         INTEGER DEFAULT 0
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE service_chain_element_v2_2;
+
+CREATE TABLE IF NOT EXISTS vm_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Created 3.To run 4.Running 5.To suspend 6.Suspended 7.To resume 8. To stop 9.Stopped 10.Modifing 11.Exception 12.Destroying',
+    pre_state           INTEGER NOT NULL COMMENT '0.Temp 1.Creating 2.Created 3.To run 4.Running 5.To suspend 6.Suspended 7.To resume 8. To stop 9.Stopped 10.Modifing 11.Exception 12.Destroying',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout 2.Add_disk 4.Del_disk 8.Resize_sys_disk 16.Resize_user_disk 32.Resize_cpu 64.Resize_mem',
+    eventid             INTEGER DEFAULT 0,
+    action              INTEGER DEFAULT 0 COMMENT '1.Lcontroller',
+    name                CHAR(64),
+    label               CHAR(64),
+    os                  CHAR(64) COMMENT 'WindowsServer2008 CentOS',
+    flag                INTEGER DEFAULT 0 COMMENT '0x1. From Template 0x2. Import 0x8. Recovery 0x20. ForceDelete 0x40. Retry 0x80. Connect Vnc 0x100. ChgFlag 0x200. MigrateFlag 0x400. RecreateFlag 0x800. HAdiskFlag 0x1000. SetHAdiskFlag 0x2000. ExpiredFlag',
+    template            CHAR(64),
+    import              VARCHAR(256),
+    poolid              INTEGER,
+    launch_server       CHAR(16),
+    gateway             CHAR(16),
+    des_host            CHAR(16),
+    epc_id              INTEGER DEFAULT 0,
+    vcloudid            INTEGER,
+    vnetid              INTEGER DEFAULT 0 REFERENCES vdc_v2_2(id),
+    vl2id               INTEGER DEFAULT 0,
+    opaque_id           VARCHAR(64),
+    vdi_sys_uuid        CHAR(64),
+    vdi_sys_sr_uuid     CHAR(64),
+    vdi_sys_sr_name     CHAR(64),
+    vdi_sys_size        INTEGER,
+    vdi_user_uuid       CHAR(64),
+    vdi_user_sr_uuid    CHAR(64),
+    vdi_user_sr_name    CHAR(64),
+    vdi_user_size       INTEGER,
+    mem_size            INTEGER,
+    vcpu_num            INTEGER,
+    tport               INTEGER,
+    lport               INTEGER,
+    ifid                INTEGER REFERENCES vinterface_v2_2(id),
+    health_state        INTEGER,
+    cpu_start_time      BIGINT DEFAULT 0,
+    disk_start_time     BIGINT DEFAULT 0,
+    traffic_start_time  BIGINT DEFAULT 0,
+    check_start_time    BIGINT DEFAULT 0,
+    uuid                CHAR(64),
+    domain              CHAR(64),
+    exclude_server      VARCHAR(128),
+    thumbprint          CHAR(64),
+    vm_path             VARCHAR(128),
+    userid              INTEGER,
+    is_expired          INTEGER DEFAULT 0,
+    expired_time        TIMESTAMP DEFAULT current_timestamp,
+    lcuuid              CHAR(64),
+    product_specification_lcuuid CHAR(64),
+    role                INTEGER DEFAULT 1 COMMENT '1. General Purpose, 2. Load Balancer, 3. Database, 4. Web Server, 5. APP Server, 6. Firewall, 7. Gateway, 8. VPN, 9. Storage, 10. WAF, 11. Transparent Bridge',
+    loopback_ips        VARCHAR(256) DEFAULT '' COMMENT 'like 1.1.1.1/32#2.2.2.2/24, separated by #',
+    PRIMARY KEY (id,domain),
+    INDEX state_server_index(state, launch_server)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM vm_v2_2;
+
+CREATE TABLE IF NOT EXISTS vinterface_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    name                CHAR(64),
+    ifindex             INTEGER NOT NULL,
+    state               INTEGER NOT NULL COMMENT '1. Attached 2.Detached 3.Exception',
+    flag                INTEGER DEFAULT 0 COMMENT '0x8. Recovery',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout 2.Config network failed',
+    eventid             INTEGER DEFAULT 0,
+    ip                  CHAR(16),
+    netmask             INTEGER,
+    iftype              INTEGER DEFAULT 0 COMMENT '1.Control 2.Service 3.WAN 4.LAN',
+    subtype             INTEGER DEFAULT 0 COMMENT '0x1.Service User, 0x2.Service Provider, 0x4.l2 interface',
+    gateway             CHAR(16),
+    mac                 CHAR(32),
+    bandw               BIGINT COMMENT 'Unit: bps',
+    ceil_bandw          BIGINT COMMENT 'Unit: bps, and ceil_bandw >= bandw for WAN port, ceil_bandw = bandw for LAN port',
+    broadc_bandw        BIGINT DEFAULT 0 COMMENT 'Unit: bps, used for vm DATA and vgw WAN, and broadc_bandw <= ceil_bandw',
+    broadc_ceil_bandw   BIGINT DEFAULT 0 COMMENT 'Unit: bps, used for vm DATA and vgw WAN, and broadc_bandw <= broadc_ceil_bandw <= ceil_bandw',
+    speed               INTEGER DEFAULT 10000 COMMENT 'Unit: Mbps',
+    ofport              INTEGER DEFAULT 0,
+    subnetid            INTEGER DEFAULT 0 COMMENT 'vl2 id',
+    vlantag             INTEGER DEFAULT 0,
+    ms_id               INTEGER DEFAULT 0 COMMENT 'micro segment id',
+    ms_vlantag          INTEGER DEFAULT 0 COMMENT 'micro segment vlantag',
+    devicetype          INTEGER COMMENT 'Type 1.vm 2.vgw 3.third-party-device 4.vmwaf 5.NSP-vgateway',
+    deviceid            INTEGER COMMENT 'vm: vm ID, vgw/NSP-vgateway: vnet ID, third-party-device: third_party_device ID, vmwaf: vmwaf ID',
+    port_id             VARCHAR(64),
+    pg_id               VARCHAR(64),
+    netdevice_lcuuid    CHAR(64),
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain),
+    UNIQUE INDEX mac_index(mac)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM vinterface_v2_2;
+
+CREATE TABLE IF NOT EXISTS vinterface_ip_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    ip                  CHAR(16),
+    netmask             CHAR(16),
+    gateway             CHAR(16),
+    vl2id               INTEGER REFERENCES vl2_v2_2(id),
+    net_index           INTEGER DEFAULT 0,
+    lcuuid              CHAR(64),
+    vifid               INTEGER REFERENCES vinterface_v2_2(id),
+    isp                 INTEGER DEFAULT 0 COMMENT 'Used for multi-ISP access',
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM vinterface_ip_v2_2;
+
+CREATE TABLE IF NOT EXISTS template_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '0. Disable 1.Enable',
+    name                CHAR(128) NOT NULL,
+    description         VARCHAR(256) NOT NULL,
+    cpu_num             INTEGER COMMENT '1< cpu_num <16',
+    mem_size            INTEGER COMMENT 'unit:M 512<= mem_size <=16*1024',
+    sys_disk            INTEGER COMMENT 'unit:G 8<= sys_disk <= 1*1024',
+    usr_disk            INTEGER COMMENT 'unit:G 8<= sys_disk <= 1*1024',
+    userid              INTEGER,
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE template_v2_2;
+
+CREATE TABLE IF NOT EXISTS template_os_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER DEFAULT 0 COMMENT '0.Enable 1.Disable',
+    name                CHAR(128) NOT NULL,
+    description         VARCHAR(256) NOT NULL DEFAULT '',
+    type                INTEGER DEFAULT 0 COMMENT '0.local 1.remote',
+    htype               INTEGER COMMENT '1.Xen 2.VMware',
+    ttype               INTEGER COMMENT '1.GW template 2.VM template 3.LB template 4.vWAF template 5.vFW template 6. TPD template',
+    server_ip           CHAR(16),
+    server_state        INTEGER DEFAULT 0 COMMENT '0.Enable 1.Disable',
+    path                CHAR(64),
+    time                timestamp  default current_timestamp,
+    userid              INTEGER DEFAULT 0,
+    groupid             INTEGER DEFAULT 0,
+    vendor              VARCHAR(256) NOT NULL DEFAULT 'YUNSHAN' COMMENT '1.YUNSHAN 2.TOPSEC 3.NSFOCUS',
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    PRIMARY KEY (id,domain)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE template_os_v2_2;
+
+CREATE TABLE IF NOT EXISTS cloud_template_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    flag                INTEGER NOT NULL,
+    name                CHAR(64) NOT NULL,
+    description         VARCHAR(256) NOT NULL,
+    cloud_type          CHAR(64) NOT NULL,
+    cloud_size          INTEGER  NOT NULL COMMENT '1.small 2.medium 3.large',
+    cloud_xml           TEXT     COMMENT 'XML TEXT',
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE cloud_template_v2_2;
+
+CREATE TABLE IF NOT EXISTS event_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(64) NOT NULL,
+    state               INTEGER NOT NULL,
+    action              VARCHAR(64),
+    controller          VARCHAR(64),
+    result              INTEGER NOT NULL COMMENT '0.SUCCESS >0 ERROR NO.',
+    operation           INTEGER DEFAULT 0 COMMENT '0.DEFAULT 1.USER DELETED',
+    comment             VARCHAR(256),
+    object              INTEGER DEFAULT -1,
+    time                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    userid              INTEGER DEFAULT -1,
+    objowner            INTEGER DEFAULT -1,
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE event_v2_2;
+
+CREATE TABLE IF NOT EXISTS log_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    module              CHAR(32) NOT NULL COMMENT 'LCWEB LCM VMDRIVER LACP MONITOR',
+    action              CHAR(32) NOT NULL,
+    loginfo             VARCHAR(256) DEFAULT NULL,
+    time                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    level               INTEGER DEFAULT 6 COMMENT '0.LOG_EMERG 1.LOG_ALERT 2.LOG_CRIT 3.LOG_ERR 4.LOG_WARNING 5.LOG_NOTICE 6.LOG_INFO 7.LOG_DEBUG',
+    user                CHAR(64) DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE log_v2_2;
+
+CREATE TABLE IF NOT EXISTS syslog_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    module              CHAR(32) NOT NULL COMMENT 'LCWEB LCM VMDRIVER LCPD MONITOR',
+    action              CHAR(32) NOT NULL,
+    objecttype          CHAR(32) NOT NULL,
+    objectname          CHAR(64) NOT NULL,
+    objectid            INTEGER,
+    loginfo             VARCHAR(256) DEFAULT NULL,
+    time                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP  ON UPDATE CURRENT_TIMESTAMP,
+    level               INTEGER COMMENT '1.LOG_ERR 2.LOG_WARNING 3.LOG_INFO',
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE syslog_v2_2;
+
+CREATE TABLE IF NOT EXISTS user_v2_2 (
+    id                  INT(10) NOT NULL AUTO_INCREMENT COMMENT 'user id',
+    username            VARCHAR(64) NOT NULL COMMENT 'user name',
+    password            VARCHAR(64) NOT NULL COMMENT 'user password',
+    authority           INTEGER COMMENT 'user authority',
+    description         VARCHAR(256) DEFAULT NULL COMMENT 'user description',
+    resource_list       VARCHAR(256),
+    cloud_max           INT(10),
+    vm_max              INT(10),
+    vdc_max             INT(10),
+    frozen              INTEGER,
+    gateway_resource    INTEGER,
+    bandwidth           INTEGER COMMENT 'deprecated',
+    email               VARCHAR(64) DEFAULT NULL,
+    is_expired          INTEGER DEFAULT 0,
+    useruuid            char(64) DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE user_v2_2;
+INSERT INTO user_v2_2(username, password, authority, description, email,useruuid) values('admin', '$1$vgE69/Rw$1YoxGZ2YcM/AvHzVYhmuv.', 1, 'Administrator', 'x@yunshan.net.cn',1);
+
+CREATE TABLE IF NOT EXISTS networks_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    view_id             INTEGER,
+    network_id          INTEGER,
+    port_number         INTEGER,
+    domain              CHAR(16),
+    PRIMARY KEY (id,domain)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM networks_v2_2;
+
+CREATE TABLE IF NOT EXISTS policy_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    type                INTEGER,
+    grain               INTEGER,
+    object              CHAR(32),
+    component           CHAR(32),
+    app                 INTEGER,
+    pgroup              INTEGER,
+    pindex              INTEGER,
+    socket              CHAR(32),
+    attribute           CHAR(48),
+    content             VARCHAR(256),
+    state               INTEGER,
+    description         VARCHAR(256)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE policy_v2_2;
+
+CREATE TABLE IF NOT EXISTS host_usage_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    cr_id               INTEGER NOT NULL,
+    host_name_lable     VARCHAR(64) NOT NULL,
+    time                timestamp  default current_timestamp,
+    cpu_info            VARCHAR(128),
+    cpu_usage           VARCHAR(1024),
+    mem_total           INTEGER,
+    mem_usage           INTEGER,
+    disk_total          INTEGER,
+    disk_usage          INTEGER,
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE host_usage_v2_2;
+CREATE TABLE IF NOT EXISTS hwdev_usage_v2_2 (
+    id                 INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    curr_time          timestamp,
+    hwdev_ip           CHAR(16),
+    hwdev_mac          CHAR(32),
+    sys_uptime         CHAR(32),
+    sys_os             CHAR(64),
+    cpu_num            INTEGER,
+    dsk_num            INTEGER,
+    cpu_type           CHAR(64),
+    cpu_data           VARCHAR(256),
+    mem_size           INTEGER,
+    mem_used           INTEGER,
+    mem_usage          CHAR(8),
+    dsk_info           VARCHAR(1024),
+    hwdev_name         CHAR(64),
+    community          VARCHAR(256),
+    data_ip            CHAR(16),
+    launch_server      CHAR(16),
+    user_name          VARCHAR(64),
+    user_passwd        VARCHAR(64),
+    rack_name          VARCHAR(256),
+    userid             INTEGER
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE hwdev_usage_v2_2;
+CREATE TABLE IF NOT EXISTS vedge_usage_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    vnet_id             INTEGER NOT NULL,
+    vedge_name_lable    VARCHAR(64) NOT NULL,
+    time                timestamp  default current_timestamp,
+    cpu_info            VARCHAR(128),
+    cpu_usage           VARCHAR(1024),
+    mem_total           INTEGER,
+    mem_usage           INTEGER,
+    disk_total          INTEGER,
+    disk_usage          INTEGER,
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE vedge_usage_v2_2;
+
+CREATE TABLE IF NOT EXISTS vm_usage_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    vm_id               INTEGER NOT NULL,
+    vm_name_lable       VARCHAR(64) NOT NULL,
+    time                timestamp  default current_timestamp,
+    cpu_info            VARCHAR(128),
+    cpu_usage           VARCHAR(1024),
+    mem_total           INTEGER,
+    mem_usage           INTEGER,
+    system_disk_total   INTEGER,
+    system_disk_usage   BIGINT,
+    user_disk_total     INTEGER,
+    user_disk_usage     BIGINT,
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE vm_usage_v2_2;
+
+CREATE TABLE IF NOT EXISTS traffic_usage_v2_2 (
+    id                  INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    vif_id              INTEGER NOT NULL,
+    vif_name_label      VARCHAR(64) NOT NULL,
+    time                timestamp  default current_timestamp,
+    rx_bytes            BIGINT,
+    rx_dropped          BIGINT,
+    rx_errors           BIGINT,
+    rx_packets          BIGINT,
+    rx_bps              BIGINT,
+    rx_pps              BIGINT,
+    tx_bytes            BIGINT,
+    tx_dropped          BIGINT,
+    tx_errors           BIGINT,
+    tx_packets          BIGINT,
+    tx_bps              BIGINT,
+    tx_pps              BIGINT
+) ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE traffic_usage_v2_2;
+
+CREATE TABLE IF NOT EXISTS sys_configuration_v2_2 (
+    id                  INTEGER NOT NULL COMMENT 'Reserve for each module. 1-999:SYSTEM 1000-1999:LCM 2000-2999:VMDRIVER 3000-3999:LACP 4000-4999:LCWEB 5000-5999:MONITOT 6000-6999:NOTIFY',
+    module_name         CHAR(64) NOT NULL COMMENT 'SYSTEM LCM VMDRIVER LACP LCWEB MONITOR NOTIFY',
+    param_name          CHAR(64) NOT NULL,
+    value               VARCHAR(256),
+    PRIMARY KEY (id)
+) ENGINE=innodb DEFAULT CHARSET=utf8;
+TRUNCATE TABLE sys_configuration_v2_2;
+
+CREATE TABLE IF NOT EXISTS token_v2_2 (
+  id int(10) NOT NULL AUTO_INCREMENT,
+  token varchar(50) DEFAULT NULL,
+  port int(10) DEFAULT NULL,
+  userid int(10) NOT NULL,
+  time datetime DEFAULT NULL,
+  locker int(11) NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+TRUNCATE TABLE token_v2_2;
+
+CREATE TABLE IF NOT EXISTS vm_snapshot_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER NOT NULL COMMENT '1.To Create 2.Complete 3.To Delete 4.To Recovery 5.Exception',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout 2.DB Error 4.Create Error 8.Delete Error 16.Recovery Error',
+    name                CHAR(64),
+    label               CHAR(64),
+    description         VARCHAR(256) DEFAULT '',
+    size                INTEGER DEFAULT 0,
+    uuid                CHAR(64),
+    vm_id               INTEGER REFERENCES vm_v2_2(id),
+    vm_lcuuid           CHAR(64) DEFAULT '' REFERENCES vm_v2_2(lcuuid),
+    userid              INTEGER DEFAULT 0,
+    parent_lcuuid       CHAR(64) DEFAULT '',
+    is_current          INTEGER DEFAULT 0,
+    is_root             INTEGER DEFAULT 0,
+    time                timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    eventid             INTEGER DEFAULT 0,
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    product_specification_lcuuid  CHAR(64) DEFAULT '',
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+DELETE FROM vm_snapshot_v2_2;
+
+CREATE TABLE IF NOT EXISTS vm_backup_v2_2(
+    id                       INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    state                    INTEGER NOT NULL COMMENT '1.To Create 2.Complete 3.To Delete 4.Deleted 5.To Recovery 6.Exception',
+    errno                    INTEGER DEFAULT 0 COMMENT '1.Timeout 2.DB Error 4.Export Error 8.Delete Error 16.Import Error',
+    vm_label                 CHAR(64),
+    vm_id                    INTEGER DEFAULT 0 REFERENCES vm_v2_2(id),
+    vl2_id                   INTEGER DEFAULT 0 REFERENCES vl2_v2_2(id),
+    vnet_id                  INTEGER DEFAULT 0 REFERENCES vnet_v2_2(id),
+    vcloud_id                INTEGER DEFAULT 0 REFERENCES vcloud_v2_2(id),
+    host_id                  INTEGER DEFAULT 0 REFERENCES host_device_v2_2(id),
+    resident_server          CHAR(16),
+    resident_username        VARCHAR(64),
+    resident_passwd          VARCHAR(64),
+    peer_server              CHAR(16),
+    peer_username            VARCHAR(64),
+    peer_passwd              VARCHAR(64),
+    local_sr_uuid            CHAR(64),
+    peer_sr_uuid             CHAR(64),
+    sr_type                  INTEGER COMMENT '1.common 2.shared',
+    time                     timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    eventid                  INTEGER DEFAULT 0,
+    sys_disk_usage           INTEGER,
+    usr_disk_usage           INTEGER,
+    flag                     INTEGER DEFAULT 0,
+    local_vdi_sys_uuid       CHAR(64),
+    local_vdi_user_uuid      CHAR(64),
+    peer_vdi_sys_uuid        CHAR(64),
+    peer_vdi_user_uuid       CHAR(64)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vm_backup_v2_2;
+
+CREATE TABLE IF NOT EXISTS vlan_v2_2 (
+    id                       INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    rack                     INTEGER NOT NULL,
+    ranges                   VARCHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE vlan_v2_2;
+
+CREATE TABLE IF NOT EXISTS ip_resource_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT,
+    ip                      CHAR(16),
+    netmask                 INTEGER,
+    vlantag                 INTEGER,
+    gateway                 CHAR(16),
+    poolid                  INTEGER DEFAULT 0,
+    userid                  INTEGER DEFAULT 0,
+    isp                     INTEGER,
+    vifid                   INTEGER DEFAULT 0,
+    ifid                    INTEGER DEFAULT 0,
+    vdcid                   INTEGER DEFAULT 0 REFERENCES vdc_v2_2(id),
+    domain                  CHAR(64),
+    lcuuid                  CHAR(64),
+    product_specification_lcuuid CHAR(64),
+    order_id                INTEGER,
+    alloc_tag               CHAR(64) COMMENT 'for IP auto allocation',
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM ip_resource_v2_2;
+
+CREATE TABLE IF NOT EXISTS lb_cluster_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    lcuuid                  CHAR(64) NOT NULL UNIQUE KEY
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE lb_cluster_v2_2;
+
+CREATE TABLE IF NOT EXISTS lb_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    lcuuid                  CHAR(64) NOT NULL UNIQUE KEY,
+    name                    CHAR(64),
+    state                   INTEGER DEFAULT 0 COMMENT '0.Temp 2.Created 4.Running 6.Suspended 9.Stopped 11.Exception 13.Destroyed reference vm_v2_2(state)',
+    hastate                 INTEGER DEFAULT 0 COMMENT '1.Master 2.Backup',
+    vm_lcuuid               CHAR(64),
+    lb_cluster_lcuuid       CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE lb_v2_2;
+
+CREATE TABLE IF NOT EXISTS domain_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                    VARCHAR(64),
+    ip                      VARCHAR(64),
+    role                    INTEGER DEFAULT 0 COMMENT '1.BSS 2.OSS',
+    lcuuid                  CHAR(64),
+    public_ip               varchar(50) DEFAULT NULL
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE domain_v2_2;
+
+CREATE TABLE IF NOT EXISTS domain_configuration_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT,
+    param_name              CHAR(64) NOT NULL,
+    value                   VARCHAR(256),
+    domain                  CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE domain_configuration_v2_2;
+
+/******FDB*********/
+CREATE TABLE IF NOT EXISTS fdb_user_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT,
+    state               INTEGER DEFAULT 0,
+    username            VARCHAR(25) DEFAULT '',
+    password            VARCHAR(256) DEFAULT '',
+    company             varchar(256) DEFAULT '',
+    industry            VARCHAR(64) DEFAULT '',
+    user_type           INTEGER DEFAULT 0 COMMENT '1.admin 2.common 3.senior 4.dedicate 5.test 6.vip 10.Jakiro_admin 11.sales 20.test_a 21.test_b',
+    contracts           VARCHAR(64) DEFAULT '',
+    phone_num           VARCHAR(64) DEFAULT '',
+    email               VARCHAR(64) DEFAULT '',
+    tenancy             DATETIME,
+    create_time         DATETIME,
+    user_resource       VARCHAR(2048) DEFAULT '',
+    session             VARCHAR(64) DEFAULT '',
+    vmpasswd            VARCHAR(256) DEFAULT '',
+    ccs                 VARCHAR(512) DEFAULT '',
+    balance             DECIMAL(18,9) DEFAULT 0.00,
+    balance_alloc       DECIMAL(18,9) DEFAULT 0.00,
+    useruuid            char(64)  DEFAULT NULL,
+    PRIMARY KEY (id)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 CHARACTER SET utf8 COLLATE utf8_bin;
+INSERT INTO fdb_user_v2_2(id, username, password, user_type, company, state, email, create_time, vmpasswd,useruuid) values(1,'admin', '$1$vgE69/Rw$1YoxGZ2YcM/AvHzVYhmuv.', 1,'admin',1, 'x@yunshan.net.cn',now(), substring(MD5(RAND()), -8),1);
+
+CREATE TABLE IF NOT EXISTS fdb_vpc_v2_2(
+    id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name        CHAR(64),
+    state       INTEGER,
+    userid      INTEGER,
+    description VARCHAR(256),
+    lcuuid      CHAR(64),
+    create_time DATETIME
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 CHARACTER SET utf8 COLLATE utf8_bin;
+TRUNCATE TABLE fdb_vpc_v2_2;
+
+CREATE TABLE IF NOT EXISTS fdb_vdc_v2_2(
+    id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name        CHAR(64),
+    state       INTEGER,
+    flag        INTEGER,
+    userid      INTEGER,
+    description VARCHAR(256),
+    vcloudid    INTEGER,
+    create_time DATETIME,
+    poolid      INTEGER,
+    isp1        VARCHAR(512),
+    isp2        VARCHAR(512),
+    isp3        VARCHAR(512),
+    isp4        VARCHAR(512),
+    lcuuid      CHAR(64),
+    vgwhamode   INTEGER
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE fdb_vdc_v2_2;
+
+CREATE TABLE IF NOT EXISTS fdb_vgw_v2_2(
+    id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    vdcid       INTEGER UNSIGNED NOT NULL DEFAULT 0,
+    state       INTEGER,
+    flag        INTEGER,
+    errno       INTEGER DEFAULT 0,
+    description VARCHAR(256),
+    poolid      INTEGER,
+    userid      INTEGER,
+    gw_launch_server CHAR(16),
+    haflag      INTEGER,
+    hastate     INTEGER,
+    haswitchmode    INTEGER,
+    create_time DATETIME,
+    lcuuid      CHAR(64),
+    name        VARCHAR(32)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE fdb_vgw_v2_2;
+
+CREATE TABLE IF NOT EXISTS fdb_vgateway_v2_2(
+    id                           INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    order_id                     INTEGER DEFAULT 0,
+    epc_id                       INTEGER UNSIGNED NOT NULL DEFAULT 0,
+    state                        INTEGER,
+    flag                         INTEGER,
+    errno                        INTEGER DEFAULT 0,
+    description                  VARCHAR(256),
+    poolid                       INTEGER,
+    userid                       INTEGER,
+    gw_launch_server             CHAR(16),
+    create_time                  DATETIME,
+    lcuuid                       CHAR(64),
+    name                         VARCHAR(32),
+    type                         CHAR(64),
+    allocation_type              CHAR(64),
+    domain                       CHAR(64),
+    product_specification_lcuuid CHAR(64),
+    gw_pool_lcuuid               CHAR(64),
+    role                         INTEGER DEFAULT 0 COMMENT '1. General Purpose, 2. Load Balancer, 3. Database, 4. Web Server, 5. APP Server, 6. Firewall, 7. Gateway, 8. VPN, 9. Storage, 10. WAF, 11. Transparent Bridge',
+    operationid                  INTEGER
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE fdb_vgateway_v2_2;
+
+CREATE TABLE IF NOT EXISTS fdb_vl2_v2_2(
+    id          INTEGER NOT NULL AUTO_INCREMENT,
+    name        CHAR(64),
+    state       INTEGER,
+    description VARCHAR(256),
+    net_type    INTEGER DEFAULT 4 COMMENT '1.CTRL 2.SERVICE 3.WAN 4.LAN',
+    vcloudid    INTEGER DEFAULT 0,
+    vnetid      INTEGER DEFAULT 0,
+    ip          CHAR(16),
+    netmask     INTEGER,
+    lcuuid      CHAR(64),
+    vlantag     INTEGER,
+    isp         INTEGER DEFAULT 0,
+    operationid INTEGER DEFAULT 0,
+    epc_id      INTEGER DEFAULT 0,
+    userid      INTEGER DEFAULT 0,
+    domain      CHAR(64),
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE fdb_vl2_v2_2;
+
+CREATE TABLE IF NOT EXISTS fdb_vm_v2_2(
+    id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name        CHAR(64),
+    state       INTEGER,
+    errno       INTEGER DEFAULT 0,
+    flag        INTEGER,
+    description VARCHAR(256),
+    ip          CHAR(16),
+    netmask     INTEGER,
+    gateway     CHAR(16),
+    vcpu_num    INTEGER,
+    mem_size    INTEGER,
+    os          VARCHAR(64),
+    launch_server CHAR(16),
+    poolid      INTEGER,
+    pool_lcuuid CHAR(64),
+    vcloudid    INTEGER,
+    vnetid      INTEGER,
+    vl2id       INTEGER,
+    create_time DATETIME,
+    userid      INTEGER,
+    order_id    INTEGER DEFAULT 0,
+    epc_id      INTEGER DEFAULT 0,
+    role        INTEGER DEFAULT 1,
+    snapshotstate  INTEGER DEFAULT 0,
+    is_expired  INTEGER DEFAULT 0,
+    lcuuid      CHAR(64),
+    sys_disk_size   INTEGER,
+    user_disk_size  INTEGER,
+    domain          CHAR(64) DEFAULT '',
+    product_specification_lcuuid CHAR(64),
+    expired_time   TIMESTAMP  DEFAULT current_timestamp,
+    operationid    INTEGER,
+    UNIQUE INDEX lcuuid_index(lcuuid)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE fdb_vm_v2_2;
+
+CREATE TABLE IF NOT EXISTS apilist_v2_2(
+    id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    apiid       INTEGER,
+    objecttype  CHAR(64),
+    objectid    INTEGER,
+    opttype     CHAR(32),
+    comment     VARCHAR(256),
+    optstate    INTEGER DEFAULT 0,
+    code        INTEGER
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE apilist_v2_2;
+
+CREATE TABLE shared_storage_resource_v2_2 (
+    id                  INTEGER NOT NULL auto_increment,
+    state               INTEGER DEFAULT 0 COMMENT '0.Normal',
+    flag                INTEGER DEFAULT 0 COMMENT '0x1. In use',
+    htype               INTEGER COMMENT '1.Xen 2.VMware',
+    iqn                 VARCHAR(256),
+    lun                 INTEGER,
+    sr_name             VARCHAR(64),
+    disk_total          INTEGER,
+    disk_used           INTEGER DEFAULT 0,
+    disk_allocated      INTEGER DEFAULT 0,
+    domain              CHAR(64),
+    rackid              INTEGER,
+    PRIMARY KEY (id,domain)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM shared_storage_resource_v2_2;
+
+CREATE TABLE IF NOT EXISTS action_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    actiontype          CHAR(64),
+    objecttype          CHAR(64),
+    objectid            INTEGER,
+    vcpu_num            INTEGER,
+    mem_size            INTEGER,
+    sys_disk_size       INTEGER,
+    usr_disk_size       INTEGER,
+    ha_disk_size        INTEGER,
+    alloctype           INTEGER,
+    time                timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE action_v2_2;
+
+CREATE TABLE IF NOT EXISTS storage_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(64),
+    rack_id             INTEGER DEFAULT 0,
+    uuid                CHAR(64),
+    is_shared           INTEGER,
+    disk_total          INTEGER DEFAULT 0,
+    disk_used           INTEGER DEFAULT 0,
+    disk_alloc          INTEGER DEFAULT 0,
+    state               INTEGER COMMENT '0.normal 1.error 2.maintenance',
+    backend             INTEGER DEFAULT 0 COMMENT '0.old-storage 1.ceph rbd',
+    type                INTEGER DEFAULT 0 COMMENT '0.capacity 1.performance',
+    domain              CHAR(64),
+    lcuuid              CHAR(64),
+    UNIQUE INDEX uuid_index(uuid)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE storage_v2_2;
+
+CREATE TABLE IF NOT EXISTS storage_connection_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    host_address        CHAR(16),
+    storage_id          INTEGER,
+    active              INTEGER COMMENT '0.not active 1.active'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE storage_connection_v2_2;
+
+CREATE TABLE IF NOT EXISTS vc_datacenter_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    server_id           INTEGER NOT NULL,
+    datacenter_name     VARCHAR(128) NOT NULL,
+    vswitch_name        VARCHAR(128) NOT NULL,
+    vm_folder           VARCHAR(128) NULL DEFAULT NULL,
+    vm_templatefolder   VARCHAR(128) NULL DEFAULT NULL,
+    description         VARCHAR(256) NULL DEFAULT NULL
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vc_datacenter_v2_2;
+
+CREATE TABLE IF NOT EXISTS vc_server_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ip                  CHAR(16) NOT NULL,
+    username            VARCHAR(64) NOT NULL,
+    passwd              VARCHAR(64) NOT NULL,
+    in_mode             VARCHAR(64) NOT NULL COMMENT 'gateway/access',
+    rackid              INTEGER NOT NULL,
+    description         VARCHAR(256) NULL DEFAULT NULL
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vc_server_v2_2;
+
+CREATE TABLE IF NOT EXISTS ha_storage_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(64),
+    rack_id             INTEGER,
+    uuid                CHAR(64),
+    is_shared           INTEGER,
+    disk_total          INTEGER,
+    disk_used           INTEGER,
+    disk_alloc          INTEGER
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE ha_storage_v2_2;
+
+CREATE TABLE IF NOT EXISTS ha_storage_connection_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    host_address        CHAR(16),
+    storage_id          INTEGER,
+    active              INTEGER COMMENT '0.not active 1.active'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE ha_storage_connection_v2_2;
+
+CREATE TABLE IF NOT EXISTS vdisk_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    vdi_uuid            CHAR(64),
+    vdi_name            VARCHAR(128),
+    vdi_sr_uuid         CHAR(64),
+    vdi_sr_name         VARCHAR(64),
+    size                INTEGER,
+    vmid                INTEGER REFERENCES vm_v2_2(id),
+    userdevice          INTEGER,
+    lcuuid              CHAR(64)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vdisk_v2_2;
+
+CREATE TABLE IF NOT EXISTS postman_cache_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    dest                VARCHAR(64) DEFAULT '' COMMENT 'destination email address',
+    event_type          INTEGER DEFAULT 0,
+    resource_type       INTEGER DEFAULT 0,
+    resource_id         INTEGER DEFAULT 0,
+    issue_timestamp     INTEGER DEFAULT 0
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE postman_cache_v2_2;
+
+CREATE TABLE IF NOT EXISTS postman_queue_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    dest                VARCHAR(64) DEFAULT '' COMMENT 'destination email address',
+    aggregate_id        INTEGER DEFAULT 0,
+    send_request        TEXT
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE postman_queue_v2_2;
+
+CREATE TABLE IF NOT EXISTS product_specification_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT,
+    lcuuid                  CHAR(64) NOT NULL UNIQUE KEY,
+    name                    VARCHAR(128) DEFAULT '',
+    type                    INTEGER DEFAULT 0,
+    charge_mode             INTEGER DEFAULT 0,
+    state                   INTEGER DEFAULT 1,
+    price                   DECIMAL(18,9) DEFAULT 0,
+    content                 VARCHAR(4096) DEFAULT '',
+    plan_name               VARCHAR(64) DEFAULT '',
+    product_type            INTEGER NOT NULL COMMENT '1 vm, 2 vgateway, 3 third_party_device, 4 ip, 5 bandwidth',
+    domain                  CHAR(64) DEFAULT '',
+    PRIMARY KEY             (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE product_specification_v2_2;
+
+CREATE TABLE IF NOT EXISTS operation_log_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    operation               VARCHAR(32) DEFAULT '',
+    objecttype              VARCHAR(32) DEFAULT '',
+    objectid                INTEGER DEFAULT 0,
+    object_userid           INTEGER DEFAULT 0,
+    start_time              DATETIME,
+    end_time                DATETIME,
+    operator_name           CHAR(128) DEFAULT '',
+    opt_result              INTEGER DEFAULT 0,
+    error_code              VARCHAR(128) DEFAULT '',
+    comment                 VARCHAR(256) DEFAULT '',
+    name                    VARCHAR(128) DEFAULT ''
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE operation_log_v2_2;
+
+CREATE TABLE IF NOT EXISTS vgw_policy_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    state               INTEGER COMMENT '0: disable, 1: enable',
+    vnetid              INTEGER,
+    policy_type         INTEGER COMMENT '1: input_acl, 2: output_acl, 3: forward_acl, 4: snat, 5: dnat',
+    name                VARCHAR(128),
+    rule_id             INTEGER,
+    isp                 INTEGER,
+    protocol            INTEGER,
+    if_type_1           CHAR(32) COMMENT '0: ANY, 1: WAN, 2: LAN',
+    if_index_1          INTEGER,
+    min_addr_1          CHAR(16) DEFAULT '0.0.0.0',
+    max_addr_1          CHAR(16) NOT NULL,
+    min_port_1          INTEGER DEFAULT 1,
+    max_port_1          INTEGER DEFAULT 65535,
+    if_type_2           CHAR(32) COMMENT 'ANY, WAN or LAN',
+    if_index_2          INTEGER,
+    min_addr_2          CHAR(16) NOT NULL,
+    max_addr_2          CHAR(16) NOT NULL,
+    min_port_2          INTEGER,
+    max_port_2          INTEGER,
+    action              CHAR(32) COMMENT 'ACCEPT or DROP'
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vgw_policy_v2_2;
+
+CREATE TABLE IF NOT EXISTS vgw_vpn_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    state               INTEGER COMMENT '0: disable, 1: enable',
+    vnetid              INTEGER,
+    name                VARCHAR(128),
+    isp                 INTEGER,
+    local_ip_addr       CHAR(16) NOT NULL,
+    local_net_addr      CHAR(16) NOT NULL,
+    local_net_mask      CHAR(16) NOT NULL,
+    remote_ip_addr      CHAR(16) NOT NULL,
+    remote_net_addr     CHAR(16) NOT NULL,
+    remote_net_mask     CHAR(16) NOT NULL,
+    psk                 CHAR(128) NOT NULL COMMENT 'preshared key'
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vgw_vpn_v2_2;
+
+CREATE TABLE IF NOT EXISTS vgw_route_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    state               INTEGER COMMENT '0: disable, 1: enable',
+    vnetid              INTEGER,
+    name                VARCHAR(128),
+    isp                 INTEGER,
+    dst_net_addr        CHAR(16) DEFAULT '0.0.0.0',
+    dst_net_mask        CHAR(16) NOT NULL,
+    next_hop            CHAR(16) NOT NULL
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vgw_route_v2_2;
+
+CREATE TABLE IF NOT EXISTS epc_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    userid              INTEGER DEFAULT 0,
+    name                VARCHAR(128) DEFAULT '',
+    domain              CHAR(64) DEFAULT '',
+    order_id            INTEGER DEFAULT 0,
+    operationid         INTEGER DEFAULT 0
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE epc_v2_2;
+
+CREATE TABLE IF NOT EXISTS order_v2_2(
+    id              INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    userid          INTEGER,
+    time            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    shopping_list   TEXT,
+    state           INTEGER DEFAULT 0 COMMENT '0.new, 1.processing, 2.delivered'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS ipmi_info_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    device_id           INTEGER,
+    device_type         INTEGER COMMENT '1.host 2.hwdev',
+    state               INTEGER COMMENT '1.Running 2.Stopped 3.Exception',
+    action              INTEGER COMMENT '1.Deploying 2.Deployed 3.Exception',
+    errno               INTEGER DEFAULT 0 COMMENT '1.Timeout',
+    ipmi_ip             CHAR(16),
+    ipmi_user_name      VARCHAR(64),
+    ipmi_passwd         VARCHAR(64),
+    ipmi_mac            VARCHAR(64),
+    host_name           VARCHAR(64),
+    os_admin_name       VARCHAR(64),
+    os_admin_password   VARCHAR(64),
+    os_deviceId         CHAR(16),
+    os_ipaddr           VARCHAR(64),
+    os_netmask          VARCHAR(64),
+    os_gateway          VARCHAR(64),
+    os_dns              VARCHAR(64),
+    os_pxe_nic          VARCHAR(64),
+    lcuuid              CHAR(64),
+    create_time         timestamp,
+    finish_time         timestamp
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE ipmi_info_v2_2;
+
+CREATE TABLE IF NOT EXISTS nas_storage_v2_2 (
+    id                              INTEGER NOT NULL AUTO_INCREMENT,
+    name                            VARCHAR(256) DEFAULT '',
+    lcuuid                          CHAR(64) DEFAULT '',
+    path                            VARCHAR(256) DEFAULT '',
+    total_size                      INTEGER DEFAULT 0,
+    available_size                  INTEGER DEFAULT 0,
+    userid                          INTEGER DEFAULT 0,
+    domain                          CHAR(64) DEFAULT '',
+    order_id                        INTEGER DEFAULT 0,
+    product_specification_lcuuid    CHAR(64) DEFAULT '',
+    service_vendor_lcuuid           CHAR(64) DEFAULT '',
+    protocol                        VARCHAR(64) DEFAULT '',
+    vendor                          VARCHAR(256) DEFAULT '',
+    create_time                     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY                     (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE nas_storage_v2_2;
+
+CREATE TABLE IF NOT EXISTS vul_scanner_v2_2 (
+    id                              INTEGER NOT NULL AUTO_INCREMENT,
+    lcuuid                          CHAR(64) DEFAULT '',
+    vm_lcuuid                       CHAR(64) DEFAULT '' REFERENCES vm_v2_2(lcuuid),
+    vm_service_ip                   CHAR(16) DEFAULT '',
+    task_type                       INTEGER DEFAULT 0 COMMENT '1.System 2.Web',
+    task_id                         INTEGER DEFAULT 0,
+    userid                          INTEGER DEFAULT 0,
+    domain                          CHAR(64) DEFAULT '',
+    order_id                        INTEGER DEFAULT 0,
+    product_specification_lcuuid    CHAR(64) DEFAULT '',
+    service_vendor_ip               CHAR(16) DEFAULT '' REFERENCES service_vendor_v2_2(service_ip),
+    service_user_name               CHAR(64) DEFAULT '',
+    service_user_passwd             CHAR(64) DEFAULT '',
+    start_time          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    scan_target                     VARCHAR(256) DEFAULT '',
+    PRIMARY KEY                     (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE vul_scanner_v2_2;
+
+CREATE TABLE IF NOT EXISTS service_vendor_v2_2 (
+    id                              INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    service_type                    INTEGER DEFAULT 0 COMMENT '1.vul_scanner 2.nas_storage 3.cloud_disk',
+    service_ip                      CHAR(16) DEFAULT '',
+    control_ip                      CHAR(16) DEFAULT '',
+    service_port                    INTEGER DEFAULT 0,
+    control_port                    INTEGER DEFAULT 0,
+    service_vendor                  VARCHAR(256) DEFAULT '',
+    service_user_name               CHAR(64) DEFAULT '',
+    service_user_passwd             CHAR(64) DEFAULT '',
+    lcuuid                          CHAR(64) DEFAULT ''
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE service_vendor_v2_2;
+
+CREATE TABLE IF NOT EXISTS nas_storage_plug_info_v2_2 (
+    id                              INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    lcuuid                          CHAR(64) DEFAULT '',
+    nas_storage_lcuuid              CHAR(64) DEFAULT '',
+    vm_lcuuid                       CHAR(64) DEFAULT ''
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE nas_storage_plug_info_v2_2;
+
+CREATE TABLE IF NOT EXISTS user_isp_bandwidth_v2_2(
+    id                              INTEGER NOT NULL AUTO_INCREMENT,
+    userid                          INTEGER NOT NULL,
+    isp                             INTEGER NOT NULL,
+    bandwidth                       BIGINT DEFAULT 0 COMMENT 'unit: bps',
+    delivered_bandwidth             BIGINT DEFAULT 0 COMMENT 'unit: bps',
+    product_specification_lcuuid    CHAR(64) DEFAULT '',
+    domain                          CHAR(64) DEFAULT '',
+    lcuuid                          CHAR(64),
+    PRIMARY KEY                     (id,domain),
+    UNIQUE userid_isp_index         (userid,isp,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE user_isp_bandwidth_v2_2;
+
+CREATE TABLE IF NOT EXISTS user_order_isp_bandwidth_v2_2(
+    id                              INTEGER NOT NULL AUTO_INCREMENT,
+    state                           INTEGER DEFAULT 0 COMMENT '0.new 1.processing 2.delivered',
+    userid                          INTEGER NOT NULL,
+    isp                             INTEGER NOT NULL,
+    order_id                        INTEGER NOT NULL,
+    product_specification_lcuuid    CHAR(64) DEFAULT '',
+    bandwidth                       BIGINT DEFAULT 0 COMMENT 'unit: bps',
+    domain                          CHAR(64) DEFAULT '',
+    lcuuid                          CHAR(64),
+    create_time                     DATETIME,
+    PRIMARY KEY                     (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE user_order_isp_bandwidth_v2_2;
+
+CREATE TABLE IF NOT EXISTS user_dbservice_v2_2(
+    id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    userid  INTEGER NOT NULL,
+    db     VARCHAR(128) NOT NULL
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE user_dbservice_v2_2;
+
+CREATE TABLE IF NOT EXISTS identifycode_v2_2(
+    id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    code CHAR(16) NOT NULL,
+    content BLOB NOT NULL,
+    hash CHAR(128),
+    state   INTEGER NOT NULL COMMENT 'reserve column',
+    use_time timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX hash_index(hash(13))
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE identifycode_v2_2;
+
+CREATE TABLE IF NOT EXISTS invitationcode_v2_2(
+    id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    code CHAR(16) NOT NULL COMMENT 'invitation code length from 6-8',
+    state   INTEGER NOT NULL DEFAULT 0 COMMENT 'reserve column',
+    duedate INTEGER NOT NULL COMMENT 'timestamp of expired day'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE invitationcode_v2_2;
+
+CREATE TABLE IF NOT EXISTS tokentask_v2_2(
+    id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    token   CHAR(32) NOT NULL,
+    params  VARCHAR(256) COMMENT 'params corresponding of the token',
+    duedate INTEGER NOT NULL COMMENT 'timestamp of expired time'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE tokentask_v2_2;
+
+CREATE TABLE IF NOT EXISTS mobile_msg_v2_2(
+    id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    mobile_number   CHAR(16) NOT NULL,
+    type    INTEGER NOT NULL COMMENT 'msg type, 1 register code',
+    params  VARCHAR(256),
+    content VARCHAR(256),
+    send_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE mobile_msg_v2_2;
+
+CREATE TABLE IF NOT EXISTS help_menu_v2_2(
+    id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    parent  INTEGER NOT NULL,
+    text    VARCHAR(128),
+    type    INTEGER NOT NULL DEFAULT 1 COMMENT '0 root, 1 parent_node, 2 leaf'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE help_menu_v2_2;
+INSERT INTO help_menu_v2_2(parent, text, type) values(0, 'ROOT', 0);
+
+CREATE TABLE IF NOT EXISTS help_detail_v2_2(
+    id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nodeid  INTEGER NOT NULL COMMENT 'id in help_menu',
+    content TEXT    COMMENT 'html of help content'
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE help_detail_v2_2;
+
+CREATE TABLE IF NOT EXISTS ticket_menu_v2_2(
+    id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    userid    INTEGER NOT NULL,
+    title   VARCHAR(256) NOT NULL,
+    type    INTEGER NOT NULL,
+    state   INTEGER NOT NULL COMMENT '0 new, 1 ongoing, 2 finish',
+    time    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    readflag    INTEGER NOT NULL COMMENT '0 all read, 1 submitter not read, 2 admin not read, 3 all not read',
+    lastreplier INTEGER NOT NULL,
+    comment INTEGER
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE ticket_menu_v2_2;
+
+CREATE TABLE IF NOT EXISTS ticket_detail_v2_2(
+    id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    content     TEXT,
+    userid  INTEGER,
+    menuid  INTEGER NOT NULL,
+    replier VARCHAR(256) NOT NULL DEFAULT '--',
+    time    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE ticket_detail_v2_2;
+
+CREATE TABLE IF NOT EXISTS cloud_disk_v2_2(
+    id                                        INTEGER NOT NULL AUTO_INCREMENT,
+    name                                      VARCHAR(128) DEFAULT '',
+    state                                     INTEGER DEFAULT 0 COMMENT '0.Creating,1.not use,2.in use',
+    size                                      INTEGER DEFAULT 0,
+    vm_lcuuid                                 CHAR(64) DEFAULT '',
+    product_specification_lcuuid              CHAR(64) DEFAULT '',
+    lcuuid                                    CHAR(64) DEFAULT '',
+    create_time                               DATETIME,
+    userid                                    INTEGER DEFAULT 0,
+    domain                                    CHAR(64) DEFAULT '',
+    order_id                                  INTEGER DEFAULT 0,
+    vendor                                    VARCHAR(256) DEFAULT '',
+    service_vendor_lcuuid                     CHAR(64) DEFAULT '',
+    target_iqn                                VARCHAR(256) DEFAULT '',
+    lun_name                                  VARCHAR(256) DEFAULT '',
+    PRIMARY KEY                               (id,domain)
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE cloud_disk_v2_2;
+
+CREATE TABLE IF NOT EXISTS iscsi_initiator_v2_2(
+    id                                INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    vm_lcuuid                         CHAR(64) DEFAULT '',
+    initiator_name                    VARCHAR(256) DEFAULT ''
+)ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE iscsi_initiator_v2_2;
+
+CREATE TABLE IF NOT EXISTS charge_detail_v2_2 (
+  id                              INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  instance_lcuuid                 char(64) DEFAULT '',
+  obj_lcuuid                      char(64) DEFAULT '',
+  product_specification_lcuuid    CHAR(64) DEFAULT '',
+  lcuuid                          char(64) DEFAULT '',
+  instance_name                   char(64) DEFAULT '',
+  instance_type                   INTEGER COMMENT '1.VM 2.vGateway 3.IP 4.Bandwidth ' ,
+  charge_mode                     INTEGER DEFAULT 0,
+  price                           decimal(18,9) DEFAULT 0,
+  cost                            decimal(18,9) DEFAULT '0.000000000',
+  start_time                      timestamp NULL DEFAULT NULL,
+  end_time                        timestamp NULL DEFAULT NULL,
+  last_check_time                 timestamp NULL DEFAULT NULL,
+  type                            INTEGER COMMENT '1.VM 2.vGateway 3.reservse 4.soul nas storage 5.IP 6.Bandwidth 7.system vul_scaner 8.web vul_scaner 9.third_party_device',
+  size                            INTEGER COMMENT 'storage service G;IP num;Bandwidth M',
+  userid                          INTEGER NOT NULL,
+  flag                            INTEGER DEFAULT 0,
+  domain                          CHAR(64) DEFAULT ''
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE charge_detail_v2_2;
+
+CREATE TABLE IF NOT EXISTS charge_detail_1month_v2_2 (
+  id                              INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  instance_lcuuid                 char(64),
+  obj_lcuuid                      char(64),
+  instance_name                   char(64),
+  instance_type                   INTEGER COMMENT '1.VM 2.vGateway 3.IP 4.Bandwidth ' ,
+  charge_mode                     INTEGER DEFAULT 0,
+  price                           decimal(18,9) DEFAULT 0,
+  settlement_amount               decimal(18,9) DEFAULT '0.000000000',
+  start_time                      timestamp NULL DEFAULT NULL,
+  end_time                        timestamp NULL DEFAULT NULL,
+  cumulative_time                 varchar(128),
+  type                            INTEGER COMMENT '1.VM 2.vGateway 3.reservse 4.soul nas storage 5.IP 6.Bandwidth 7.system vul_scaner 8.web vul_scaner 9.third_party_device',
+  size                            INTEGER COMMENT 'storage service G;IP num;Bandwidth M',
+  userid                          INTEGER NOT NULL,
+  month                           char(64)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE charge_detail_1month_v2_2;
+
+CREATE TABLE IF NOT EXISTS charge_detail_history_v2_2 (
+  id                           INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  instance_lcuuid              char(64) DEFAULT '',
+  obj_lcuuid                   char(64) DEFAULT '',
+  product_specification_lcuuid CHAR(64) DEFAULT '',
+  lcuuid                       char(64) DEFAULT '',
+  instance_name                char(64) DEFAULT '',
+  instance_type                INTEGER COMMENT '1.VM 2.vGateway 3.IP 4.Bandwidth ' ,
+  type                         INTEGER COMMENT '1.VM 2.vGateway 3.reservse 4.soul nas storage 5.IP 6.Bandwidth 7.system vul_scaner 8.web vul_scaner 9.third_party_device',
+  size                         INTEGER COMMENT 'storage service G;IP num;Bandwidth M',
+  charge_mode                  INTEGER DEFAULT 0,
+  price                        decimal(18,9) DEFAULT 0,
+  cost                         decimal(18,9) DEFAULT '0.000000000',
+  cost_time                    timestamp NULL DEFAULT NULL,
+  userid                       INTEGER NOT NULL
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE charge_detail_history_v2_2;
+
+CREATE TABLE IF NOT EXISTS lb_listener_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(128),
+    protocol            INTEGER COMMENT '1: http, 2: tcp',
+    ip                  CHAR(16) DEFAULT '',
+    port                INTEGER,
+    balance             INTEGER COMMENT '1: roundrobin, 2: leastconn',
+    session_stricky     INTEGER COMMENT '0: none, 1: insert, 2: rewrite',
+    health_check        INTEGER COMMENT '0: disable, 1: enable',
+    cookie_timeout      INTEGER COMMENT 'Unit: s',
+    cookie_name         CHAR(64) DEFAULT '',
+    lcuuid              CHAR(64) DEFAULT '',
+    lb_lcuuid           CHAR(64) DEFAULT '' REFERENCES vm_v2_2(lcuuid)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE lb_listener_v2_2;
+
+CREATE TABLE IF NOT EXISTS lb_bk_vm_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(128),
+    ip                  CHAR(16) DEFAULT '',
+    port                INTEGER DEFAULT 0,
+    weight              INTEGER DEFAULT 1,
+    state               INTEGER COMMENT '0: disable, 1: enable',
+    health_state        INTEGER COMMENT '0: down, 1: up, 2. abnormal',
+    lcuuid              CHAR(64) DEFAULT '',
+    vm_lcuuid           CHAR(64) DEFAULT '' REFERENCES vm_v2_2(lcuuid),
+    lb_listener_lcuuid  CHAR(64) DEFAULT '' REFERENCES lb_listener_v2_2(lcuuid),
+    lb_lcuuid           CHAR(64) DEFAULT '' REFERENCES vm_v2_2(lcuuid),
+    forward_rule_lcuuid CHAR(64) DEFAULT '' REFERENCES lb_forward_rule_v2_2(lcuuid)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE lb_bk_vm_v2_2;
+
+CREATE TABLE IF NOT EXISTS lb_forward_rule_v2_2 (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(128),
+    type                INTEGER COMMENT '1: domain, 2: url',
+    content             VARCHAR(256),
+    state               INTEGER COMMENT '0: disable, 1: enable',
+    userid              INTEGER DEFAULT 0,
+    lcuuid              CHAR(64) DEFAULT ''
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE lb_forward_rule_v2_2;
+
+CREATE TABLE IF NOT EXISTS unit_price (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(128) DEFAULT '',
+    type                VARCHAR(128) DEFAULT '',
+    description         VARCHAR(256) DEFAULT '',
+    price               VARCHAR(4096) DEFAULT '',
+    charge_mode         VARCHAR(128) DEFAULT 'per-day',
+    domain              CHAR(64) DEFAULT ''
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE unit_price;
+
+CREATE TABLE IF NOT EXISTS pricing_plan (
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(128) DEFAULT '',
+    type                VARCHAR(128) DEFAULT '',
+    description         VARCHAR(256) DEFAULT '',
+    content             VARCHAR(4096) DEFAULT '',
+    coupon              VARCHAR(4096) DEFAULT '',
+    domain              CHAR(64) DEFAULT '',
+    expiry_type         VARCHAR(128) DEFAULT 'never',
+    expires_in          INTEGER DEFAULT 0,
+    expires_after       DATETIME DEFAULT NULL
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE pricing_plan;
+
+CREATE TABLE IF NOT EXISTS recharge_record_v2_2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    state                   INTEGER DEFAULT 0 COMMENT '0: Temp, 1: FINISH, 2: Exception',
+    amount                  DECIMAL(18,4) DEFAULT 0.00,
+    userid                  INTEGER REFERENCES fdb_user_v2_2(id),
+    time                    DATETIME,
+    trade_no                CHAR(64),
+    lcuuid                  CHAR(64),
+    chargeid                VARCHAR(32),
+    sign                    VARCHAR(256)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE recharge_record_v2_2;
+
+CREATE TABLE IF NOT EXISTS promotion_rules (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                    VARCHAR(256) DEFAULT '',
+    domain                  CHAR(64) DEFAULT '',
+    description             VARCHAR(256) DEFAULT '',
+    purchase_type           VARCHAR(128) DEFAULT '',
+    purchase_quantity       INTEGER DEFAULT 0,
+    present_type            VARCHAR(128) DEFAULT '',
+    present_quantity        INTEGER DEFAULT 0,
+    present_days            INTEGER DEFAULT 0,
+    event_start_time        timestamp  default current_timestamp,
+    event_end_time          timestamp
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE promotion_rules;
+
+CREATE TABLE IF NOT EXISTS promotion_rules_detail (
+  id                        INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  promotion_rules_id        INTEGER DEFAULT 0,
+  object_type               varchar(32) DEFAULT NULL,
+  object_lcuuid             varchar(64) DEFAULT NULL,
+  present_days              INTEGER DEFAULT 0,
+  present_quantity          INTEGER DEFAULT 0,
+  order_id                  INTEGER DEFAULT 0,
+  userid                    INTEGER DEFAULT 0,
+  create_time               timestamp DEFAULT CURRENT_TIMESTAMP
+) ENGINE=innoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE promotion_rules_detail;
+
+
+CREATE TABLE IF NOT EXISTS backup_space_v2_2 (
+     id                                    INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     lcuuid                                CHAR(64) DEFAULT '',
+     userid                                INTEGER DEFAULT 0,
+     domain                                CHAR(64) DEFAULT '',
+     product_specification_lcuuid          CHAR(64) DEFAULT '',
+     create_time                           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+     order_id                              INTEGER DEFAULT 0,
+     total_size                            INTEGER DEFAULT 0
+ ) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE backup_space_v2_2;
+
+CREATE TABLE IF NOT EXISTS block_device (
+    id                                     INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                                   VARCHAR(256) DEFAULT '',
+    alias                                  VARCHAR(128) DEFAULT '' COMMENT 'name displayed on website',
+    description                            VARCHAR(256) DEFAULT '',
+    state                                  INTEGER DEFAULT 0 COMMENT '0.tmp 1.creating 2.complete 3.modifying 4.deleting 5.deleted',
+    flag                                   INTEGER DEFAULT 0 COMMENT '0.detached 1.attached',
+    errno                                  INTEGER DEFAULT 0,
+    size                                   INTEGER DEFAULT 0 COMMENT 'in MB',
+    iops                                   INTEGER DEFAULT 0 COMMENT '0 means no limit',
+    throughput                             INTEGER DEFAULT 0 COMMENT 'in MB, 0 means no limit',
+    storage_lcuuid                         CHAR(64),
+    vm_lcuuid                              CHAR(64) DEFAULT '',
+    creation_time                          TIMESTAMP DEFAULT current_timestamp,
+    device                                 INTEGER DEFAULT 0 COMMENT '0.detached, other.deviceid',
+    user_lcuuid                            CHAR(64) DEFAULT '',
+    product_specification_lcuuid           CHAR(64) DEFAULT '',
+    order_id                               INTEGER DEFAULT 0,
+    lcuuid                                 CHAR(64),
+    domain                                 CHAR(64)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE block_device;
+
+CREATE TABLE IF NOT EXISTS block_snapshot (
+    id                                     INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                                   VARCHAR(256) DEFAULT '',
+    description                            VARCHAR(256) DEFAULT '',
+    state                                  INTEGER COMMENT '0.creating 1.complete',
+    size                                   INTEGER DEFAULT 0 COMMENT 'in MB',
+    block_device_lcuuid                    CHAR(64),
+    storage_lcuuid                         CHAR(64),
+    vm_snapshot_lcuuid                     CHAR(64),
+    parent_lcuuid                          CHAR(64) DEFAULT '',
+    creation_time                          TIMESTAMP DEFAULT current_timestamp,
+    is_current                             INTEGER DEFAULT 0,
+    is_root                                INTEGER DEFAULT 0,
+    user_lcuuid                            CHAR(64) DEFAULT '',
+    product_specification_lcuuid           CHAR(64) DEFAULT '',
+    lcuuid                                 CHAR(64)
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE block_snapshot;
+
+CREATE TABLE IF NOT EXISTS block_attached (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    vm_lcuuid               CHAR(64),
+    block_device_lcuuid     CHAR(64),
+    device                  INTEGER NOT NULL
+) ENGINE=innodb AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+TRUNCATE TABLE block_attached;
+
+CREATE TABLE IF NOT EXISTS azure_vm (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                    CHAR(64) NOT NULL,
+    ip                      CHAR(16) DEFAULT '',
+    state                   VARCHAR(64) DEFAULT '',
+    vl2_name                VARCHAR(64) DEFAULT '',
+    epc_name                VARCHAR(64) DEFAULT '',
+    subscription_id         CHAR(64) NOT NULL,
+    lcuuid                  CHAR(64),
+    domain                  CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE azure_vm;
+
+CREATE TABLE IF NOT EXISTS azure_vgateway (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                    CHAR(64) NOT NULL,
+    ip                      CHAR(16) DEFAULT '',
+    epc_name                VARCHAR(64) DEFAULT '',
+    subscription_id         CHAR(64) NOT NULL,
+    lcuuid                  CHAR(64),
+    domain                  CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE azure_vgateway;
+
+CREATE TABLE IF NOT EXISTS azure_vl2 (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                    CHAR(64) NOT NULL,
+    ip                      CHAR(16) DEFAULT '',
+    netmask                 INTEGER default 0,
+    epc_name                VARCHAR(64) DEFAULT '',
+    subscription_id         CHAR(64) NOT NULL,
+    lcuuid                  CHAR(64),
+    domain                  CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE azure_vl2;
+
+CREATE TABLE IF NOT EXISTS azure_epc (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                    CHAR(64) NOT NULL,
+    subscription_id         CHAR(64) NOT NULL,
+    yunshan_epc_id          INTEGER DEFAULT 0,
+    lcuuid                  CHAR(64),
+    domain                  CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE azure_epc;
+
+CREATE TABLE IF NOT EXISTS azure_vpn_connection (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    local_vfw_lcuuid        CHAR(64) NOT NULL,
+    azure_vgateway_lcuuid   CHAR(64) NOT NULL,
+    local_gateway_ip        CHAR(16) DEFAULT '',
+    local_subnet            CHAR(16) DEFAULT '',
+    local_netmask           CHAR(16) DEFAULT '',
+    azure_gateway_ip        CHAR(16) DEFAULT '',
+    azure_subnet            CHAR(16) DEFAULT '',
+    azure_netmask           CHAR(16) DEFAULT '',
+    ike_passwd              VARCHAR(256) DEFAULT '',
+    state                   VARCHAR(64) DEFAULT '',
+    epc_name                VARCHAR(64) DEFAULT '',
+    lcuuid                  CHAR(64),
+    domain                  CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE azure_vpn_connection;
+
+CREATE TABLE IF NOT EXISTS azure_subscription (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    subscription_id         CHAR(64) NOT NULL,
+    subscription_name       VARCHAR(256) DEFAULT '',
+    userid                  INTEGER default 0,
+    lcuuid                  CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE azure_subscription;
+
+CREATE TABLE IF NOT EXISTS openstack_tenant (
+    id                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    tenant_id               CHAR(64) NOT NULL COMMENT 'openstack tenant_id',
+    tenant_name             VARCHAR(256) DEFAULT '' COMMENT 'openstack tenant_name',
+    userid                  INTEGER default 0 REFERENCES user_v2_2(id),
+    lcuuid                  CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+TRUNCATE TABLE openstack_tenant;
+
+CREATE TABLE IF NOT EXISTS report_to_user(
+        id                 INTEGER NOT NULL auto_increment PRIMARY KEY,
+        userid             INTEGER,
+        useruuid           CHAR(64),
+        domain             CHAR(64),
+        name               VARCHAR(256),
+        type               INTEGER COMMENT '1,weekly;2,monthly',
+        category           INTEGER COMMENT '1,monitor;2,cost record',
+        start_time         DATETIME
+) ENGINE=innodb AUTO_INCREMENT=1  DEFAULT CHARSET=utf8;
+TRUNCATE TABLE report_to_user;
+
+CREATE TABLE IF NOT EXISTS portgroup_v2_2(
+    id                  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    pg                  VARCHAR(64),
+    type                VARCHAR(64) COMMENT 'DVS.distributed;NVS.normal',
+    dc                  VARCHAR(64),
+    host                VARCHAR(64),
+    vswitch             VARCHAR(64),
+    rackid              INTEGER,
+    vlantag             INTEGER,
+    userid              INTEGER,
+    vcid                INTEGER,
+    vl2id               INTEGER,
+    net_type            INTEGER DEFAULT 4 COMMENT '1.CTRL 2.SERVICE 3.WAN 4.LAN',
+    lcuuid              CHAR(64)
+)ENGINE=innodb DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+DELETE FROM portgroup_v2_2;
+
+set @lcuuid = (select uuid());
+INSERT INTO fdb_template_liveconnector_v2_2(state, name, description, bandwidth, lcuuid) values(1, 'liveX_10M', '', 10485760, @lcuuid);
+set @lcuuid = (select uuid());
+INSERT INTO fdb_template_liveconnector_v2_2(state, name, description, bandwidth, lcuuid) values(1, 'liveX_100M', '', 104857600, @lcuuid);
+set @lcuuid = (select uuid());
+INSERT INTO fdb_template_liveconnector_v2_2(state, name, description, bandwidth, lcuuid) values(1, 'liveX_300M', '', 314572800, @lcuuid);
+
+set @lcuuid = (select uuid());
+INSERT INTO vl2_v2_2(state, pre_state, name, net_type, vcloudid, vnetid, isp, lcuuid, domain) values(2, 0, 'ctrl', 1, 0, 0, 0, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+INSERT INTO fdb_vl2_v2_2(state, name, net_type, isp, lcuuid, domain) values(2, 'ctrl', 1, 0, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+
+set @lcuuid = (select uuid());
+INSERT INTO vl2_v2_2(state, pre_state, name, net_type, vcloudid, vnetid, isp, lcuuid, domain) values(2, 0, 'service', 2, 0, 0, 0, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+INSERT INTO fdb_vl2_v2_2(state, name, net_type, isp, lcuuid, domain) values(2, 'service', 2, 0, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+
+set @lcuuid = (select uuid());
+INSERT INTO vl2_v2_2(state, pre_state, name, net_type, vcloudid, vnetid, isp, lcuuid, domain) values(0, 0, 'Azure', 3, 0, 0, 8, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+INSERT INTO fdb_vl2_v2_2(state, name, net_type, isp, lcuuid, domain) values(0, 'Azure', 3, 8, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+
+set @lcuuid = (select uuid());
+INSERT INTO vl2_v2_2(state, pre_state, name, net_type, vcloudid, vnetid, isp, lcuuid, domain) values(0, 0, 'OpenStack', 3, 0, 0, 7, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+INSERT INTO fdb_vl2_v2_2(state, name, net_type, isp, lcuuid, domain) values(0, 'OpenStack', 3, 7, @lcuuid, 'ffffffff-ffff-ffff-ffff-ffffffffffff');
+
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(1, 'SYSTEM', 'version', 'LiveCloud v1.1 (32bit)');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(2, 'SYSTEM', 'deployment', 'Yunshan Networks.');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(18, 'SYSTEM', 'mem_overcommit', '1');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(19, 'SYSTEM', 'running_mode', 'independent');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(20, 'SYSTEM', 'lcm_ip', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(21, 'SYSTEM', 'domain', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(22, 'SYSTEM', 'vgw_ctrl_ip_min', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(23, 'SYSTEM', 'vgw_ctrl_ip_max', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(24, 'SYSTEM', 'vgw_ctrl_ip_mask', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(25, 'SYSTEM', 'controller_ctrl_ip_min', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(26, 'SYSTEM', 'controller_ctrl_ip_max', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(27, 'SYSTEM', 'controller_ctrl_ip_netmask', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(28, 'SYSTEM', 'vm_ctrl_ip_min', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(29, 'SYSTEM', 'vm_ctrl_ip_max', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(30, 'SYSTEM', 'vm_ctrl_ip_netmask', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(31, 'SYSTEM', 'server_ctrl_ip_min', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(32, 'SYSTEM', 'server_ctrl_ip_max', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(33, 'SYSTEM', 'server_ctrl_ip_netmask', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(34, 'SYSTEM', 'service_provider_ip_min', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(35, 'SYSTEM', 'service_provider_ip_max', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(36, 'SYSTEM', 'service_provider_ip_netmask', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(37, 'SYSTEM', 'vm_service_ip_min', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(38, 'SYSTEM', 'vm_service_ip_max', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(39, 'SYSTEM', 'vm_service_ip_netmask', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6000, 'MONITOR', 'email', '');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6001, 'MONITOR', 'host_cpu_duration', '180');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6002, 'MONITOR', 'host_cpu_usage', '80');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6003, 'MONITOR', 'host_mem_duration', '0');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6004, 'MONITOR', 'host_mem_usage', '90');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6005, 'MONITOR', 'host_network_duration', '0');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6006, 'MONITOR', 'host_network_usage', '90');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6007, 'MONITOR', 'host_interval', '300');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6008, 'MONITOR', 'vm_interval', '300');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6009, 'MONITOR', 'vm_network_duration', '0');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6010, 'MONITOR', 'vm_network_usage', '90');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6011, 'MONITOR', 'vm_disk_duration', '180');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6012, 'MONITOR', 'vm_disk_usage', '80');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6013, 'MONITOR', 'vm_cpu_duration', '180');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6014, 'MONITOR', 'vm_cpu_usage', '80');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6015, 'MONITOR', 'vm_mem_duration', '0');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6016, 'MONITOR', 'vm_mem_usage', '80');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6017, 'MONITOR', 'host_disk_duration', '180');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6018, 'MONITOR', 'host_disk_usage', '90');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6019, 'MONITOR', 'lease_chk_interval', '24');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) values(6020, 'MONITOR', 'nsp_vgateway_upper_limit', '50');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(7000, 'VMDRIVER', 'vmware_session_ticket', NULL);
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8000, 'RESOURCE-JOB', 'rack_expired_alert','10');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8001, 'RESOURCE-JOB', 'rack_expired_used','5');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8002, 'RESOURCE-JOB', 'rack_expired_clean','3');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8003, 'RESOURCE-JOB', 'rack_expired_backup','1');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8004, 'RESOURCE-JOB', 'resource_expired_alert','7');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8005, 'RESOURCE-JOB', 'resource_expired_used','3');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8006, 'RESOURCE-JOB', 'resource_expired_clean','1');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(8007, 'RESOURCE-JOB', 'resource_expired_backup','0');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(9000, 'LCPD', 'ctrl_plane_vlan','');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(9001, 'LCPD', 'serv_plane_vlan','');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(9010, 'LCPD', 'ctrl_plane_bandwidth','104857600');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(9011, 'LCPD', 'serv_plane_bandwidth','1073741824');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(10000, 'LCPD', 'tunnel_protocol','VXLAN');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(11000, 'TALKER', 'vcpu_over_allocation_ratio', '0');
+INSERT INTO sys_configuration_v2_2(id, module_name, param_name, value) VALUES(11001, 'TALKER', 'kvm_server_switch_mode', '0');
+
+INSERT INTO template_v2_2(state, name, description, cpu_num, mem_size, sys_disk, usr_disk, userid) values(0, 'sys_1CPU_512M_0G', 'A Trial Virtual Machine Template', 1, 512, 30, 0, 0);
+INSERT INTO template_v2_2(state, name, description, cpu_num, mem_size, sys_disk, usr_disk, userid) values(0, 'sys_2CPU_1G_60G', 'Low performance Virtual Machine Template', 2, 1024, 30, 60, 0);
+INSERT INTO template_v2_2(state, name, description, cpu_num, mem_size, sys_disk, usr_disk, userid) values(0, 'sys_4CPU_2G_100G', 'Medium performance Virtual Machine Template', 4, 2048, 30, 100, 0);
+INSERT INTO template_v2_2(state, name, description, cpu_num, mem_size, sys_disk, usr_disk, userid) values(0, 'sys_4CPU_4G_150G', 'Medium performance Virtual Machine Template', 4, 4096, 30, 150, 0);
+INSERT INTO template_v2_2(state, name, description, cpu_num, mem_size, sys_disk, usr_disk, userid) values(0, 'sys_8CPU_8G_200G', 'High performance Virtual Machine Template', 8, 8192, 30, 200, 0);
+INSERT INTO template_v2_2(state, name, description, cpu_num, mem_size, sys_disk, usr_disk, userid) values(0, 'sys_16CPU_16G_500G', 'High performance Virtual Machine Template', 16, 16384, 30, 500, 0);

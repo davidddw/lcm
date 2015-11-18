@@ -1,0 +1,104 @@
+#ifndef _LC_VM_TEMPLATE_H
+#define _LC_VM_TEMPLATE_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define LC_MAX_TEMPLATE_NUM            50
+#define LC_VM_VDI_DEFAULT_SIZE         8
+#define LC_VM_CMD_SIZE                 512
+
+#define LC_VM_TEMPLATE_INVALID_ID      0 
+#define LC_VM_TEMPLATE_INVALID_STR     "template-invalid"
+
+#define LC_VM_TEMPLATE_CENTOSA_ID      1
+#define LC_VM_TEMPLATE_CENTOSA_STR     "template-centosA"
+
+#define LC_VM_TEMPLATE_CENTOSB_ID      2
+#define LC_VM_TEMPLATE_CENTOSB_STR     "template-centosB"
+
+#define LC_VM_TEMPLATE_CENTOSC_ID      3
+#define LC_VM_TEMPLATE_CENTOSC_STR     "template-centosC"
+
+#define LC_VM_TEMPLATE_CENTOSD_ID      4
+#define LC_VM_TEMPLATE_CENTOSD_STR     "template-centosD"
+
+#define LC_VM_TEMPLATE_CENTOSE_ID      5
+#define LC_VM_TEMPLATE_CENTOSE_STR     "template-centosE"
+
+#define LC_VM_TEMPLATE_CENTOSF_ID      6
+#define LC_VM_TEMPLATE_CENTOSF_STR     "template-centosF"
+
+
+
+#define LC_VM_TEMPLATE_UBUNTUA_ID      11
+#define LC_VM_TEMPLATE_UBUNTUA_STR     "template-ubuntuA"
+
+#define LC_VM_TEMPLATE_UBUNTUB_ID      12
+#define LC_VM_TEMPLATE_UBUNTUB_STR     "template-ubuntuB"
+
+#define LC_VM_TEMPLATE_UBUNTUC_ID      13
+#define LC_VM_TEMPLATE_UBUNTUC_STR     "template-ubuntuC"
+
+#define LC_VM_TEMPLATE_UBUNTUD_ID      14
+#define LC_VM_TEMPLATE_UBUNTUD_STR     "template-ubuntuD"
+
+#define LC_VM_TEMPLATE_UBUNTUE_ID      15
+#define LC_VM_TEMPLATE_UBUNTUE_STR     "template-ubuntuE"
+
+#define LC_VM_TEMPLATE_UBUNTUF_ID      16
+#define LC_VM_TEMPLATE_UBUNTUF_STR     "template-ubuntuF"
+
+
+#define LC_VM_TEMPLATE_WIN08A_ID       21
+#define LC_VM_TEMPLATE_WIN08A_STR      "template-win08A"
+
+#define LC_VM_TEMPLATE_WIN08B_ID       22 
+#define LC_VM_TEMPLATE_WIN08B_STR      "template-win08B"
+
+#define LC_VM_TEMPLATE_WIN08C_ID       23
+#define LC_VM_TEMPLATE_WIN08C_STR      "template-win08C"
+
+#define LC_VM_TEMPLATE_WIN08D_ID       24
+#define LC_VM_TEMPLATE_WIN08D_STR      "template-win08D"
+
+#define LC_VM_TEMPLATE_WIN08E_ID       25
+#define LC_VM_TEMPLATE_WIN08E_STR      "template-win08E"
+
+#define LC_VM_TEMPLATE_WIN08F_ID       26
+#define LC_VM_TEMPLATE_WIN08F_STR      "template-win08F"
+
+#if 0
+struct lc_vm_template {
+    int type;
+    char template_name[20];
+};
+
+struct lc_vm_template vm_template[LC_MAX_TEMPLATE_NUM] = {
+    {LC_VM_TEMPLATE_INVALID_ID, LC_VM_TEMPLATE_INVALID_STR},
+
+    {LC_VM_TEMPLATE_CENTOSA_ID, LC_VM_TEMPLATE_CENTOSA_STR},
+    {LC_VM_TEMPLATE_CENTOSB_ID, LC_VM_TEMPLATE_CENTOSB_STR},
+    {LC_VM_TEMPLATE_CENTOSC_ID, LC_VM_TEMPLATE_CENTOSC_STR},
+    {LC_VM_TEMPLATE_CENTOSD_ID, LC_VM_TEMPLATE_CENTOSD_STR},
+    {LC_VM_TEMPLATE_CENTOSE_ID, LC_VM_TEMPLATE_CENTOSE_STR},
+    {LC_VM_TEMPLATE_CENTOSF_ID, LC_VM_TEMPLATE_CENTOSF_STR},
+
+    {LC_VM_TEMPLATE_UBUNTUA_ID, LC_VM_TEMPLATE_UBUNTUA_STR},
+    {LC_VM_TEMPLATE_UBUNTUB_ID, LC_VM_TEMPLATE_UBUNTUB_STR},
+    {LC_VM_TEMPLATE_UBUNTUC_ID, LC_VM_TEMPLATE_UBUNTUC_STR},
+    {LC_VM_TEMPLATE_UBUNTUD_ID, LC_VM_TEMPLATE_UBUNTUD_STR},
+    {LC_VM_TEMPLATE_UBUNTUE_ID, LC_VM_TEMPLATE_UBUNTUE_STR},
+    {LC_VM_TEMPLATE_UBUNTUF_ID, LC_VM_TEMPLATE_UBUNTUF_STR},
+
+    {LC_VM_TEMPLATE_WIN08A_ID, LC_VM_TEMPLATE_WIN08A_STR},
+    {LC_VM_TEMPLATE_WIN08B_ID, LC_VM_TEMPLATE_WIN08B_STR},
+    {LC_VM_TEMPLATE_WIN08C_ID, LC_VM_TEMPLATE_WIN08C_STR},
+    {LC_VM_TEMPLATE_WIN08D_ID, LC_VM_TEMPLATE_WIN08D_STR},
+    {LC_VM_TEMPLATE_WIN08E_ID, LC_VM_TEMPLATE_WIN08E_STR},
+    {LC_VM_TEMPLATE_WIN08F_ID, LC_VM_TEMPLATE_WIN08F_STR},
+};
+
+#endif
+#endif /* _LC_VM_TEMPLATE_H */

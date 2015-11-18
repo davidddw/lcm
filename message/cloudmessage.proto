@@ -1,0 +1,457 @@
+package cloudmessage;
+option java_package = "com.livecloud.net.message";
+option java_outer_classname = "CloudMessageProtos";
+
+enum VMResultType {
+  VM_RESULT_SUCCESS = 0;
+  VM_RESULT_FAILURE = -10000;
+  VM_RESULT_TEMPLATE_NOT_FOUND = -1;
+  VM_RESULT_DISK_SPACE_INSUFFICIENT = -2;
+  VM_RESULT_CPU_NOT_ENOUGH = -3;
+  VM_RESULT_INTERFACE_CREATE_ERROR = -4;
+  VM_RESULT_INTERFACE_BIND_ERROR = -5;
+  VM_RESULT_VM_CREATE_ERROR = -6;
+  VM_RESULT_VM_CREATE_MESSAGE_ERROR = -7;
+  VM_RESULT_VM_NOT_FOUND = -8;
+  VM_RESULT_SYS_DISK_ERROR = -9;
+  VM_RESULT_USER_DISK_ERROR = -10;
+  VM_RESULT_MEMORY_NOT_ENOUGH = -11;
+  VM_RESULT_VM_UPDATE_ERROR = -12;
+  VM_RESULT_VM_DELETE_ERROR = -13;
+  VM_RESULT_INTERFACE_UPDATE_ERROR = -14;
+  VM_RESULT_INTERFACE_DELETE_ERROR = -15;
+  VM_RESULT_INTERFACE_UNBIND_ERROR = -16;
+  VM_RESULT_VM_ON_ERROR = -17;
+  VM_RESULT_VM_OFF_ERROR = -18;
+  VM_RESULT_VM_SUSPEND_ERROR = -19;
+  VM_RESULT_VM_EXISTS_ERROR = -20;
+  VM_RESULT_VM_SNAPSHOT_ERROR = -21;
+  VM_RESULT_VCENTER_CONNECTED_ERROR = -22;
+  VM_RESULT_VM_MIGRATE_VMOTION_ERROR = -23;
+  VM_RESULT_PG_EXISTS_ERROR = -24;
+  VM_RESULT_PG_NOT_FOUND = -25;
+}
+
+enum Result {
+    SUCCESS = 0;
+    FAIL = 1;
+}
+
+message VMVCenterInfoResp {
+  required uint32 result = 1;
+  repeated VMVCenterInfo vm_info = 2;
+}
+
+message VMVCenterInfo {
+  required uint32 result = 1;
+  required string vm_name = 2;
+  required string server_ip = 3;
+  required string server_vcenter_ip = 4;
+}
+
+enum VMStates {
+  VM_STATS_ON = 1;
+  VM_STATS_OFF = 2;
+  VM_STATS_SUSPEND = 3;
+}
+
+message Message {
+    optional VMAddReq vm_add_request = 1;
+    optional VMAddResp vm_add_response = 2;
+    optional VMDeleteReq vm_del_request = 3;
+    optional VMDeleteResp vm_del_response = 4;
+    optional VMOpsReq vm_ops_request = 5;
+    optional VMOpsResp vm_ops_response = 6;/* vmdriver */
+    optional VMStatsReq vm_stats_request = 7;/* monitor */
+    optional VMStatsResp vm_stats_response = 8;
+    optional VMUpdateReq vm_update_request = 9;/* vmdriver */
+    optional VMUpdateResp vm_update_response = 10;
+    optional PortUpdateReq port_update_request = 11;/* lcpd */
+    optional PortUpdateResp port_update_response = 12;
+    optional HostsInfoReq host_info_request = 13;/* vmdriver,monitor */
+    optional HostsInfoResp host_info_response = 14;
+    optional VMSnapshotAddReq vm_snapshot_add_request = 15;/* vmdriver */
+    optional VMSnapshotAddResp vm_snapshot_add_response = 16;
+    optional VMSnapshotDelReq vm_snapshot_del_request = 17;
+    optional VMSnapshotDelResp vm_snapshot_del_response = 18;
+    optional VMSnapshotRevertReq vm_snapshot_revert_request = 19;
+    optional VMSnapshotRevertResp vm_snapshot_revert_response = 20;
+    optional VMMigrateReq vm_migrate_request = 21;/* vmdriver */
+    optional VMMigrateResp vm_migrate_response = 22;
+    optional VMVifUsageReq vm_vif_usage_request = 23;/* snf */
+    optional VMVifUsageResp vm_vif_usage_response = 24;
+    optional VMSetDiskReq vm_disk_request  = 25;
+    optional VMSetDiskResp vm_disk_response = 26;
+    optional PGDeleteReq port_group_del_request  = 27;
+    optional PGDeleteResp port_group_del_response = 28;
+    optional VMVCenterInfoResp vm_ha_response = 29;
+/*  optional VmadapterVmLearnReq vm_learning_request = 30;*/
+/*  optional VmadapterVmLearnReply vm_learning_response = 31;*/
+    optional VmadapterVmLearnReq vmadapter_vm_learn_req = 155;
+    optional VmadapterVmLearnReply vmadapter_vm_learn_reply = 156;
+    
+}
+
+/* start vm add */
+/* VM launch info */
+message LaunchInfo {
+  required string serverip = 1; /* server ip address */
+  required string username = 2; /* server access username */
+  required string password = 3; /* server access password */
+}
+
+message IntfInfo {
+  required string mac = 1;
+  required string v4addr = 2;
+  required string gwaddr = 3;
+  required string mask = 4;
+  required string portgroup_name = 6;
+  required uint32 if_index = 7;     /* if index for this VM */
+  enum IntfFlag {
+    LC_INTF_ENABLED = 0;
+    LC_INTF_STATIC = 1;
+    LC_INTF_DHCP = 2;
+  }
+  required IntfFlag flag = 8; /* Bitwise-OR of Flags */
+  required uint64 bandwidth = 9;
+  optional uint32 vlan_id = 10;
+  required uint32 vif_id = 11;
+}
+
+message VMAddReq {
+  required string vm_name = 1;     /* vm name */
+  required string vm_template = 2; /* vm's template name */
+  required uint32 vm_cpunum = 3; /* vm's cpu number */
+  required uint32 vm_memory = 4; /* vm's memory with MB unit */
+  required string vm_sys_disk_ds_name = 5;
+  required uint32 vm_sys_disk_size = 6;  /* system disk in GBytes */
+  required string vm_user_disk_ds_name = 7;
+  required uint32 vm_user_disk_size = 8;  /* user disk in GBytes */
+  required uint32 os_type = 9;
+  repeated IntfInfo intf = 10;
+  required LaunchInfo launch_info = 11;
+  required uint32 vnc_port = 12;
+  optional string iso_path = 13;    /* iso file path */
+}
+
+message VMAddResp {
+  required uint32 result = 1;
+  required string vm_name = 2;
+  repeated IntfInfo intf = 3;
+}
+/* end vm add */
+
+/* start vm del */
+message VMDeleteReq {
+  required string vm_name = 1;
+}
+
+message VMDeleteResp {
+  required string vm_name = 1;
+  required uint32 result = 2;  /* following fields returned by vcenterd */
+}
+/* end vm del */
+
+/* start vm ops */
+enum VMOps {
+  LC_VM_START = 1;
+  LC_VM_SHUTDOWN = 2;
+  LC_VM_PAUSE = 3;
+  LC_VM_RESUME = 4;
+}
+
+message VMOpsReq {
+  required string vm_name = 1;
+  required VMOps ops = 2; /* operations */
+  optional string iso_path = 3; /* iso file path */
+}
+
+message VMOpsResp {
+  required string vm_name = 1;
+  required VMOps ops = 3; /* operations */
+  required uint32 result = 4;  /* following fields returned by vcenterd */
+}
+/* end vm ops */
+
+/* start vm stats */
+
+message VMStats {
+  required string vm_name = 1; /* vm name used by livecloud */
+  /* following fields returned by vcenterd */
+  required uint32 result = 3;
+  required VMStates vm_state = 4;  /* vm state such as power state */
+  required uint32 mem_used = 5; /* memory total size , in MBytes unit*/
+  required string cpu_usage = 6;   /* CPU usage 0 ~1 */
+  required uint32 sys_disk_used = 7; /* system disk used GBytes */
+  required uint32 user_disk_used = 8; /* user disk used */
+  required string host_address = 9;
+}
+
+/* VM/Gateway update both use this message */
+message VMStatsReq {
+  repeated string vm_name = 1; /* vm name */
+}
+
+message VMStatsResp {
+  required uint32 result = 1;
+  repeated VMStats vm_stats = 2;
+}
+/* end vm stats */
+
+/* start vm update */
+enum VMUpdateFlag {
+  LC_VMWARE_UPDATE_SYS_DISK = 0x00000001;
+  LC_VMWARE_UPDATE_USER_DISK = 0x00000002;
+  LC_VMWARE_UPDATE_INTF = 0x00000004;
+  LC_VMWARE_UPDATE_CPU_NUM = 0x00000008;
+  LC_VMWARE_UPDATE_MEMORY_SIZE = 0x00000010;
+  LC_VMWARE_UPDATE_HA_DISK = 0x00000020;
+}
+message VMHAdisk {
+  required uint32 userdevice = 1; /* vm ha disk */
+  required uint32 disk_size = 2; /* vm ha disk in GBytes */
+  optional string disk_uuid = 3; /* vm ha disk uuid */
+  optional string disk_name = 4; /* vm ha disk name */
+  optional string disk_ds_name = 5;
+}
+
+message VMUpdateReq {
+  required string vm_name = 1; /* vm's  name*/
+  required uint32 flag = 2; /*Bitwise-OR of Flags */
+  optional string vm_sys_disk_ds_name = 3;
+  optional uint32 vm_sys_disk_size = 4;  /* system disk in GBytes */
+  optional string vm_user_disk_ds_name = 5;
+  optional uint32 vm_user_disk_size = 6;  /* user disk in GBytes */
+  repeated IntfInfo intf = 7;
+  optional uint32 vm_cpu_num = 8;
+  optional uint32 vm_memory_size = 9; /* memory size in MBytes */
+  repeated VMHAdisk ha_disk = 10;
+}
+
+message VMUpdateResp {
+  required string vm_name = 1; /* vm name used by livecloud */
+  required uint32 result = 2; /* fields returned by vcenterd */
+  required uint32 flag = 3; /*Bitwise-OR of Flags */
+  optional string vm_sys_disk_ds_name = 4;
+  optional uint32 vm_sys_disk_size = 5;  /* system disk in GBytes */
+  optional string vm_user_disk_ds_name = 6;
+  optional uint32 vm_user_disk_size = 7;  /* user disk in GBytes */
+  repeated IntfInfo intf = 8;
+  optional uint32 vm_cpu_num = 9;
+  optional uint32 vm_memory_size = 10; /* memory size in MBytes */
+  repeated VMHAdisk ha_disk = 11;
+}
+/* end vm update */
+
+/* start update port */
+message PortUpdateReq {
+  required string vm_name = 1;
+  enum PortUpdateActions {
+    LC_PORT_UPDATE_BANDWIDTH = 0x00000001;
+    LC_PORT_UPDATE_VLAN_ID   = 0x00000002;
+  }
+  required uint32 actions = 2;
+  repeated IntfInfo intf = 3;
+}
+
+message PortUpdateResp {
+  required string vm_name = 1;
+  required uint32 actions = 2;
+  repeated IntfInfo intf = 3;
+  required uint32 result = 4;
+}
+/* end update port */
+
+/* start host info */
+message StorageInfo {
+  required string ds_name = 1; /* datastore name */
+  required uint32 disk_free = 2;
+  required uint32 disk_total = 3;
+  enum StorageType {
+    LC_STORAGE_LOCAL = 0x1;
+    LC_STORAGE_SHARED = 0x2;
+  }
+  required StorageType storage_type = 4;
+  required string uuid = 5;
+}
+
+/* Host Info */
+message HostsInfoReq {
+  required string host_address = 1;
+}
+
+message HostsInfoResp {
+  required string host_address = 1;
+  required uint32 result = 2;
+  enum HostStatus {
+    LC_HOST_NOT_RESPONDING = 0x1;
+    LC_HOST_DISCONNECTED = 0x2;
+    LC_HOST_CONNECTED = 0x3;
+  }
+  required HostStatus status = 3;
+  required string cpu_usage = 4; /* "0,0.042#1,0.034#2,0.315#" <id>,<usage># */
+  required uint32 cpu_num = 5;
+  required string cpu_info = 6; /* "<cores>,<vendor>,<model>" */
+  required uint32 mem_used = 7; /* in MB */
+  required uint32 mem_total = 8; /* in MB */
+  repeated StorageInfo storage_info = 9;
+  required uint32 role = 10;
+  required string host_name = 11;
+}
+/* end host info */
+
+/* start vm snapshot add */
+message VMSnapshotAddReq {
+  required string vm_name = 1;
+  required string vm_snapshot_name = 2;
+  enum VMSnapshotAddFlag {
+    LC_VM_SNAPSHOT_ADD_REPLACE_OLD = 0x00000001;
+  }
+  required VMSnapshotAddFlag flag = 3;
+}
+
+message VMSnapshotAddResp {
+  required uint32 result = 1;
+  required string vm_name = 2;
+  required string vm_snapshot_name = 3;
+}
+/* end vm snapshot add */
+
+/* start vm snapshot del */
+message VMSnapshotDelReq {
+  required string vm_name = 1;
+  required string vm_snapshot_name = 2;
+}
+
+message VMSnapshotDelResp {
+  required uint32 result = 1;
+  required string vm_name = 2;
+  required string vm_snapshot_name = 3;
+}
+/* end vm snapshot del */
+
+/* start vm snapshot revert */
+message VMSnapshotRevertReq {
+  required string vm_name = 1;
+  required string vm_snapshot_name = 2;
+}
+
+message VMSnapshotRevertResp {
+  required uint32 result = 1;
+  required string vm_name = 2;
+  required string vm_snapshot_name = 3;
+}
+/* end vm snapshot revert */
+
+/* start vm migrate */
+message VMMigrateReq {
+  required string vm_name = 1;
+  required string dest_host_addr = 2;
+  optional string dest_ds_name = 3;
+}
+
+message VMMigrateResp {
+  required uint32 result = 1;
+  required string vm_name = 2;
+  required string dest_host_addr = 3;
+  optional string dest_ds_name = 4;
+}
+/* end vm migrate */
+
+/* start vm vif usage */
+message VifUsage {
+  required uint32 if_index = 1;
+  required uint64 rx_bytes = 2; /* received bytes*/
+  required uint64 rx_dropped = 3;
+  required uint64 rx_errors = 4;
+  required uint64 rx_packets = 5; /* packets number */
+  required uint64 rx_bps = 6; /* bytes per second */
+  required uint64 rx_pps = 7; /* packets per second */
+  required uint64 tx_bytes = 8; /* transmit bytes*/
+  required uint64 tx_errors = 9;
+  required uint64 tx_dropped = 10;
+  required uint64 tx_packets = 11;
+  required uint64 tx_bps = 12;
+  required uint64 tx_pps = 13;
+  required uint32 vif_id = 14;
+}
+
+message VMVifUsage {
+  required uint32 result = 1; /* following fields returned by vcenterd */
+  required string vm_name = 2; /* vm name used by livecloud */
+  required uint32 vm_type = 3;
+  required uint32 vm_id = 4;
+  required uint32 vdc_id = 5;
+  required uint32 host_id = 6;
+  required VMStates vm_state = 7;  /* vm state such as power state */
+  required uint32 mem_free = 8; /* memory free size , in MBytes unit*/
+  required string cpu_usage = 9;   /* CPU usage 0 ~1 */
+  required uint32 sys_disk_used = 10; /* system disk used GBytes */
+  required uint32 user_disk_used = 11; /* user disk used */
+  repeated VifUsage vif_usage = 12;
+}
+
+message VMIntfInfo {
+  required string vm_name = 1;
+  required IntfInfo vm_intf = 2;
+  required uint32 vm_type = 3;
+  required uint32 vm_id = 4;
+  required uint32 vdc_id = 5;
+  required uint32 host_id = 6;
+}
+
+message VMVifUsageReq {
+  repeated VMIntfInfo vm_intf_info = 1;
+}
+
+message VMVifUsageResp {
+  required uint32 result = 1;
+  repeated VMVifUsage vm_vif_usage = 2;
+}
+/* end vm vif usage */
+
+
+/* start vm attach detach volume */
+enum VMSetDiskFlag {
+  LC_VMWARE_ATTACH_DISK = 0x00000001;
+  LC_VMWARE_DETACH_DISK = 0x00000002;
+}
+
+message VMSetDiskReq {
+  required string vm_name = 1; /* vm's  name*/
+  required uint32 flag = 2; /*Bitwise-OR of Flags */
+  repeated VMHAdisk ha_disk = 3;
+}
+
+message VMSetDiskResp {
+  required string vm_name = 1; /* vm name used by livecloud */
+  required uint32 result = 2; /* fields returned by vcenterd */
+  required uint32 flag = 3; /*Bitwise-OR of Flags */
+}
+/* end vm attach detach volume */
+
+/* start delete a port group */
+message PGDeleteReq {
+  required string portgroup_name = 1;
+}
+
+message PGDeleteResp {
+  required uint32 result = 1;
+  required string portgroup_name = 2;
+}
+/* end delete a port group */
+
+message VmadapterVmLearnReq {
+  required uint32 vc_id = 1;
+  optional string vcenter_ip = 2;
+  optional string vc_username = 3;
+  optional string vc_password = 4;
+}
+
+message VmadapterVmLearnReply {
+  optional string vcenter_ip = 1;
+  optional uint32 err = 2;
+  optional Result result = 3;
+  optional string vm_info = 4;
+}
+
